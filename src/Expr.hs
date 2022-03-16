@@ -36,7 +36,7 @@ eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEP
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just (IntVal (factorial x))
+eval vars (Fact x) = Just (IntVal (factorial x))--MOHAK
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -71,7 +71,7 @@ pExpr = do t <- pTerm
             ||| do char '-'
                    Sub t <$> pExpr
                  ||| return t
-
+--MOHAK
 pFactor :: Parser Expr
 pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
@@ -81,7 +81,7 @@ pFactor = do Val . digitToInt <$> digit
                        e <- pExpr
                        char ')'
                        return e
-
+--MOHAK
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
            e <- pExpr
