@@ -17,14 +17,15 @@ data Expr = Add Expr Expr
           | Str String
           | Lit Lit
           | Fact Expr
-  --deriving Show
+  deriving Show
 
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
-  --deriving Show
+  deriving Show
 
 data Lit = IntVal Int | StrVal String
+  deriving Show
 
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
@@ -38,11 +39,7 @@ eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
 eval vars (Fact x) = Just (IntVal (factorial x))
-<<<<<<< HEAD
---eval vars (ToString x) = Just (StrVal (show x))
-=======
 eval vars (ToString x) = Just (StrVal (show x))
->>>>>>> 60e3c29dca847823ada4a5c710023450957de3a3
 
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
@@ -57,16 +54,16 @@ getVal (Val a) = a
 getLit :: Expr -> Lit
 getLit (Lit a) = a
 
+-- prints out Str "variable_name" or Val number rather than "variable_name" or number
+litToString :: Lit -> String
+litToString (StrVal a) = a
+
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
 --Mohak
 factorial :: Expr -> Int
 --factorial 0 = 1
-<<<<<<< HEAD
 factorial n =  getVal n * factorial (Val (getVal n - 1))
-=======
-factorial n =  (getVal) n * factorial (Val (getVal n -1))
->>>>>>> 60e3c29dca847823ada4a5c710023450957de3a3
 
 pCommand :: Parser Command
 pCommand = do t <- letter
