@@ -31,7 +31,7 @@ executable Haskell-Project2
     other-modules: Expr
                    Parsing
                    REPL
-                   TestFile_QuickCheck
+                   --TestFile_QuickCheck
     
     
 

@@ -36,7 +36,7 @@ eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEP
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just ((IntVal) factorial(getVal x))
+eval vars (Fact x) = Just (IntVal (factorial x))
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -51,10 +51,10 @@ getVal (Val a) = a
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
-
+--Mohak
 factorial :: Expr -> Int
-factorial 0 = 1
-factorial n =  (getVal) n * factorial (n - 1)
+--factorial 0 = 1
+factorial n =  (getVal) n * factorial (Val (getVal n -1))
 
 pCommand :: Parser Command
 pCommand = do t <- letter
@@ -80,7 +80,8 @@ pFactor :: Parser Expr
 pFactor = do d <- digit
              return (Val (digitToInt d))
            ||| do v <- letter
-                  return factorial(d)
+                  e <- pExpr
+                  return (Fact e)
                 ||| do char '('
                        e <- pExpr
                        char ')'
@@ -90,8 +91,10 @@ pTerm :: Parser Expr
 pTerm = do f <- pFactor
            do char '*'
               t <- pTerm
+              e <- pExpr
               return (Mult t e)
             ||| do char '/'
                    t <- pTerm
+                   e <- pExpr
                    return (Div t e) 
                  ||| return f
