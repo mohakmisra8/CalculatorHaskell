@@ -11,8 +11,9 @@ initLState = LState []
 -- Given a variable name and a value, return a new set of variables with
 -- that name and value added.
 -- If it already exists, remove the old value
+--Should be working -Ewan
 updateVars :: Name -> Int -> [(Name, Int)] -> [(Name, Int)]
-updateVars = findVar ([(Name, Int)]) Name
+updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 
 -- Return a new set of variables with the given name removed
 dropVar :: Name -> [(Name, Int)] -> [(Name, Int)]
