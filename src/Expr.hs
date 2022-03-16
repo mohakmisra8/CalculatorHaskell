@@ -14,7 +14,7 @@ data Expr = Add Expr Expr
           | ToString Expr
           | Var Name
           | Val Int
-          | Str String 
+          | Str String
           | Fact Expr
   deriving Show
 
@@ -23,7 +23,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
   deriving Show
 
-data Lit = IntVal Int | StrVal String 
+data Lit = IntVal Int | StrVal String
 
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
@@ -36,51 +36,47 @@ eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEP
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just ((IntVal) factorial(getVal x))
+eval vars (Fact x) = Just (IntVal factorial(getVal x))
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
-findVar stack n | (fst (stack!!0)) == n  = snd (stack!!0)
+findVar stack n | fst (stack!!0) == n  = snd (head stack)
                 | otherwise = findVar (drop 1 stack) n
 
 intDiv :: Expr -> Expr -> Int
-intDiv a b = div (getVal a) (getVal b) 
+intDiv a b = div (getVal a) (getVal b)
 
 getVal :: Expr -> Int
-getVal (Val a) = a 
+getVal (Val a) = a
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
 
 factorial :: Expr -> Int
 factorial 0 = 1
-factorial n =  (getVal) n * factorial (n - 1)
+factorial n =  getVal n * factorial (n - 1)
 
 pCommand :: Parser Command
 pCommand = do t <- letter
               char '='
-              e <- pExpr
-              return (Set [t] e)
+              Set [t] <$> pExpr
             ||| do string "print"
                    space
-                   e <- pExpr
-                   return (Print e)
+                   Print <$> pExpr
 --done by MOHAK
 pExpr :: Parser Expr
 pExpr = do t <- pTerm
            do char '+'
-              e <- pExpr
-              return (Add t e)
+              Add t <$> pExpr
             ||| do char '-'
-                   e <- pExpr
-                   return (Sub t e)  
+                   Sub t <$> pExpr
                  ||| return t
 
 pFactor :: Parser Expr
-pFactor = do d <- digit
-             return (Val (digitToInt d))
+pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
-                  return factorial(d)
+                  pExpr
+                  --factorial d
                 ||| do char '('
                        e <- pExpr
                        char ')'
@@ -88,10 +84,11 @@ pFactor = do d <- digit
 
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
+           e <- pExpr
            do char '*'
               t <- pTerm
               return (Mult t e)
             ||| do char '/'
                    t <- pTerm
-                   return (Div t e) 
+                   return (Div t e)
                  ||| return f

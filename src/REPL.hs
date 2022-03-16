@@ -3,7 +3,7 @@ module REPL where
 import Expr
 import Parsing
 
-data LState = LState { vars :: [(Name, Int)] }
+data LState = LState { vars :: [(Name, Lit)] }
 
 initLState :: LState
 initLState = LState []
@@ -12,7 +12,7 @@ initLState = LState []
 -- that name and value added.
 -- If it already exists, remove the old value
 --Should be working -Ewan
-updateVars :: Name -> Int -> [(Name, Int)] -> [(Name, Int)]
+updateVars :: Name -> Lit -> [(Name, Lit)] -> [(Name, Lit)]
 updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 
 -- Return a new set of variables with the given name removed
