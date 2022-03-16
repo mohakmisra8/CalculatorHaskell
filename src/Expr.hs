@@ -38,7 +38,11 @@ eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
 eval vars (Fact x) = Just (IntVal (factorial x))
+<<<<<<< HEAD
 --eval vars (ToString x) = Just (StrVal (show x))
+=======
+eval vars (ToString x) = Just (StrVal (show x))
+>>>>>>> 60e3c29dca847823ada4a5c710023450957de3a3
 
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
@@ -55,10 +59,14 @@ getLit (Lit a) = a
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
-
+--Mohak
 factorial :: Expr -> Int
 --factorial 0 = 1
+<<<<<<< HEAD
 factorial n =  getVal n * factorial (Val (getVal n - 1))
+=======
+factorial n =  (getVal) n * factorial (Val (getVal n -1))
+>>>>>>> 60e3c29dca847823ada4a5c710023450957de3a3
 
 pCommand :: Parser Command
 pCommand = do t <- letter
@@ -79,8 +87,8 @@ pExpr = do t <- pTerm
 pFactor :: Parser Expr
 pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
-                  pExpr
-                  --factorial d
+                  e <- pExpr
+                  return (Fact e)
                 ||| do char '('
                        e <- pExpr
                        char ')'
@@ -91,8 +99,10 @@ pTerm = do f <- pFactor
            e <- pExpr
            do char '*'
               t <- pTerm
+              e <- pExpr
               return (Mult t e)
             ||| do char '/'
                    t <- pTerm
-                   return (Div t e)
+                   e <- pExpr
+                   return (Div t e) 
                  ||| return f
