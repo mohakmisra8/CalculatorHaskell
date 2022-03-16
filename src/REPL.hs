@@ -12,7 +12,7 @@ initLState = LState []
 -- that name and value added.
 -- If it already exists, remove the old value
 updateVars :: Name -> Int -> [(Name, Int)] -> [(Name, Int)]
-updateVars = undefined
+updateVars = findVar ([(Name, Int)]) Name
 
 -- Return a new set of variables with the given name removed
 dropVar :: Name -> [(Name, Int)] -> [(Name, Int)]
@@ -20,7 +20,7 @@ dropVar = undefined
 
 process :: LState -> Command -> IO ()
 process st (Set var e) 
-     = do let st' = undefined
+     = do let st' = updateVars 
           -- st' should include the variable set to the result of evaluating e
           repl st'
 process st (Print e) 

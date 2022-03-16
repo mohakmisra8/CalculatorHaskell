@@ -15,6 +15,7 @@ data Expr = Add Expr Expr
           | Var Name
           | Val Int
           | Str String 
+          | Fact Expr
   deriving Show
 
 -- These are the REPL commands
@@ -35,6 +36,7 @@ eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEP
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
+eval vars (Fact x) = Just ((IntVal) factorial(getVal x))
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -50,6 +52,10 @@ getVal (Val a) = a
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
 
+factorial :: Expr -> Int
+factorial 0 = 1
+factorial n =  (getVal) n * factorial (n - 1)
+
 pCommand :: Parser Command
 pCommand = do t <- letter
               char '='
@@ -59,7 +65,7 @@ pCommand = do t <- letter
                    space
                    e <- pExpr
                    return (Print e)
-
+--done by MOHAK
 pExpr :: Parser Expr
 pExpr = do t <- pTerm
            do char '+'
@@ -67,14 +73,14 @@ pExpr = do t <- pTerm
               return (Add t e)
             ||| do char '-'
                    e <- pExpr
-                   error "Subtraction not yet implemented!" 
+                   return (Sub t e)  
                  ||| return t
 
 pFactor :: Parser Expr
 pFactor = do d <- digit
              return (Val (digitToInt d))
            ||| do v <- letter
-                  error "Variables not yet implemented" 
+                  return factorial(d)
                 ||| do char '('
                        e <- pExpr
                        char ')'
@@ -84,8 +90,8 @@ pTerm :: Parser Expr
 pTerm = do f <- pFactor
            do char '*'
               t <- pTerm
-              error "Multiplication not yet implemented" 
+              return (Mult t e)
             ||| do char '/'
                    t <- pTerm
-                   error "Division not yet implemented" 
+                   return (Div t e) 
                  ||| return f
