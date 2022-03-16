@@ -24,7 +24,7 @@ extra-source-files:
     CHANGELOG.md
     README.md
 
-executable Haskell-Project1
+executable Haskell-Project2
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
