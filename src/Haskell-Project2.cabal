@@ -1,0 +1,43 @@
+cabal-version:      2.4
+name:               Haskell-Project2
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Mohak Misra
+maintainer:         mm510@st-andrews.ac.uk
+
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files:
+    CHANGELOG.md
+    README.md
+
+executable Haskell-Project1
+    main-is:          Main.hs
+
+    -- Modules included in this executable, other than Main.
+    other-modules: Expr
+                   Parsing
+                   REPL
+                   TestFile_QuickCheck
+    
+    
+
+    -- LANGUAGE extensions used by modules in this package.
+    default-extensions: DeriveAnyClass, DeriveGeneric, TemplateHaskell
+    -- other-extensions:
+    build-depends:    base, QuickCheck, aeson, bytestring, directory
+    hs-source-dirs:   src 
+    default-language: Haskell2010
