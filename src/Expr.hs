@@ -15,13 +15,14 @@ data Expr = Add Expr Expr
           | Var Name
           | Val Int
           | Str String
+          | Lit Lit
           | Fact Expr
-  deriving Show
+  --deriving Show
 
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
-  deriving Show
+  --deriving Show
 
 data Lit = IntVal Int | StrVal String
 
@@ -36,8 +37,8 @@ eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEP
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just (IntVal factorial(getVal x))
-eval vars (ToString x) = Just (StrVal (show x))
+eval vars (Fact x) = Just (IntVal (factorial x))
+--eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
@@ -49,12 +50,15 @@ intDiv a b = div (getVal a) (getVal b)
 getVal :: Expr -> Int
 getVal (Val a) = a
 
+getLit :: Expr -> Lit
+getLit (Lit a) = a
+
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
 
 factorial :: Expr -> Int
-factorial 0 = 1
-factorial n =  getVal n * factorial (n - 1)
+--factorial 0 = 1
+factorial n =  getVal n * factorial (Val (getVal n - 1))
 
 pCommand :: Parser Command
 pCommand = do t <- letter

@@ -21,7 +21,7 @@ dropVar = undefined
 
 process :: LState -> Command -> IO ()
 process st (Set var e) 
-     = do let st' = updateVars 
+     = do let st' = LState {vars = updateVars var (getLit e) (vars st)}
           -- st' should include the variable set to the result of evaluating e
           repl st'
 process st (Print e) 
