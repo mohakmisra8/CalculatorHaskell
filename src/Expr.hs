@@ -66,8 +66,12 @@ factorial :: Expr -> Int
 factorial n =  getVal n * factorial (Val (getVal n - 1))
 
 ass                         :: Parser (Name, Expr)
-ass                         =  do (a, i) <- ass_int
-                                  return (a, Val i)
+ass                         =  do n <- token ident
+                                  char '='
+                                  eq <- algebra
+                                  return (n, eq)
+                               ||| do (a, i) <- ass_int
+                                      return (a, Val i)
                                 ||| do (a, s) <- ass_str
                                        return (a, Str s)
 
@@ -81,17 +85,25 @@ algebra                         = do a <- token clause
                                          b <- algebra
                                          return (Div (Val a) b)
                                   ||| do a <- token integer
-                                         char '+'
+                                         õ <- plusOrMinus
                                          b <- algebra
-                                         return (Add (Val a) b)
-                                  ||| do a <- token integer
-                                         char '+'
+                                         return ((op õ) (Val a) b)
+                                  ||| do a <- algebra
+                                         õ <- plusOrMinus
                                          b <- token integer
-                                         return (Add (Val a) (Val b))
+                                         return ((op õ) a (Val b))
+                                  ||| do a <- token integer
+                                         õ <- plusOrMinus
+                                         b <- token integer
+                                         return ((op õ) (Val a) (Val b))
                                   ||| do a <- token integer
                                          char '/'
                                          b <- token integer
                                          return (Div (Val a) (Val b))
+
+op :: Char -> Expr -> Expr -> Expr
+op '+' = Add
+op '-' = Sub
 
 clause :: Parser Expr
 clause = do char '('
