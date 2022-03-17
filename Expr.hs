@@ -17,8 +17,6 @@ data Expr = Add Expr Expr
           | Str String
           | Lit Lit
           | Fact Expr
-          | Mod Expr
-          | Abs Expr
   deriving Show
 
 -- These are the REPL commands
@@ -68,8 +66,12 @@ factorial :: Expr -> Int
 factorial n =  getVal n * factorial (Val (getVal n - 1))
 
 ass                         :: Parser (Name, Expr)
-ass                         =  do (a, i) <- ass_int
-                                  return (a, Val i)
+ass                         =  do n <- token ident
+                                  char '='
+                                  eq <- algebra
+                                  return (n, eq)
+                               ||| do (a, i) <- ass_int
+                                      return (a, Val i)
                                 ||| do (a, s) <- ass_str
                                        return (a, Str s)
 
@@ -116,7 +118,7 @@ pExpr = do t <- pTerm
             ||| do char '-'
                    Sub t <$> pExpr
                  ||| return t
---MOHAK
+
 pFactor :: Parser Expr
 pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
@@ -126,11 +128,11 @@ pFactor = do Val . digitToInt <$> digit
                        e <- pExpr
                        char ')'
                        return e
---MOHAK
+
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
            e <- pExpr
-           do char '*'--multiplication
+           do char '*'
               t <- pTerm
               e <- pExpr
               return (Mult t e)

@@ -78,15 +78,32 @@ ass_int                         =  do a <- token ident
 ass_str                         :: Parser (String, String)
 ass_str                         =  do a <- token ident
                                       char '='
-                                      b <- token char_seq
+                                      b <- token multi_str_cat
                                       return (a, b)
 
 char_seq :: Parser String
 char_seq = do char '"'
-              x <- token letter
+              x <- alphanumspace
               xs <- many alphanumspace
               char '"'
               return (x:xs)
+
+
+str_cat :: Parser String
+str_cat = do s1 <- token char_seq
+             string "++"
+             s2 <- token char_seq
+             return (s1 ++ s2)
+         ||| do s <- token char_seq
+                return s
+
+multi_str_cat :: Parser String
+multi_str_cat = do s1 <- token str_cat
+                   string "++"
+                   s2 <- token str_cat
+                   return (s1 ++ s2)
+                ||| do s <- token str_cat
+                       return s
 
 
 {-
@@ -105,6 +122,10 @@ Derived primitives
 sat                           :: (Char -> Bool) -> Parser Char
 sat p                         =  do x <- item
                                     if p x then return x else failure
+
+bigsat                           :: (String -> Bool) -> Parser String
+bigsat p                         =  do x <- ident
+                                       if p x then return x else failure
 
 digit                         :: Parser Char
 digit                         =  sat isDigit
@@ -163,6 +184,7 @@ int                           =  do char '-'
 space                         :: Parser ()
 space                         =  do many (sat isSpace)
                                     return ()
+
 {-
 Ignoring spacing
 ----------------
