@@ -156,8 +156,12 @@ pTerm = do f <- pFactor
               t <- pTerm
               e <- pExpr
               return (Mult t e)
-            ||| do char '/'
+            ||| do char '/'--division
                    t <- pTerm
                    e <- pExpr
                    return (Div t e) 
+            ||| do char '%'--modulus
+                   t <- pTerm
+                   e <- pExpr
+                   return (Mod t e) 
                  ||| return f
