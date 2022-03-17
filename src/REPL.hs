@@ -16,7 +16,6 @@ updateVars :: Name -> Lit -> [(Name, Lit)] -> [(Name, Lit)]
 updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 
 -- Return a new set of variables with the given name removed
---MOHAK
 dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
 dropVar n = filter (\x -> fst x /= n)
 
