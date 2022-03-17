@@ -65,6 +65,12 @@ factorial :: Expr -> Int
 --factorial 0 = 1
 factorial n =  getVal n * factorial (Val (getVal n - 1))
 
+ass                         :: Parser (Name, Lit)
+ass                         =  do (a, i) <- ass_int
+                                  return (a, IntVal i)
+                                ||| do (a, s) <- ass_str
+                                       return (a, StrVal s)
+
 pCommand :: Parser Command
 pCommand = do t <- letter
               char '='

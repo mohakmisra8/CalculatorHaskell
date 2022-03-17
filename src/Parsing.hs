@@ -63,6 +63,33 @@ parse                         :: Parser a -> String -> [(a,String)]
 parse (P p) inp               =  p inp
 
 {-
+Advanced parsers
+-------------
+-}
+
+
+
+ass_int                         :: Parser (String, Int)
+ass_int                         =  do a <- token ident
+                                      char '='
+                                      b <- token integer
+                                      return (a, b)
+
+ass_str                         :: Parser (String, String)
+ass_str                         =  do a <- token ident
+                                      char '='
+                                      b <- token char_seq
+                                      return (a, b)
+
+char_seq :: Parser String
+char_seq = do char '"'
+              x <- token letter
+              xs <- many alphanumspace
+              char '"'
+              return (x:xs)
+
+
+{-
 Choice
 ------
 -}
@@ -93,6 +120,13 @@ letter                        =  sat isAlpha
 
 alphanum                      :: Parser Char
 alphanum                      =  sat isAlphaNum
+
+alphanumspace                      :: Parser Char
+alphanumspace                      =  sat isAlphaNumSpace
+
+isAlphaNumSpace :: Char -> Bool
+isAlphaNumSpace ' ' = True 
+isAlphaNumSpace c = isAlphaNum c 
 
 char                          :: Char -> Parser Char
 char x                        =  sat (== x)
