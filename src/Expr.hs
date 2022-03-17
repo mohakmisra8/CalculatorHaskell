@@ -37,10 +37,12 @@ eval vars (Str s) = Just (StrVal s) -- for values, just give the value directly
 eval vars (Var n) = Just (findVar vars n) -- look-up actual value of variable
 eval vars (Add x y) = Just (IntVal (getVal x + getVal y)) -- implemented by DEEPANKUR
 eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEPANKUR
+eval vars (Mod x y) = Just (IntVal (getVal x % getVal y)) -- implemented by DEEPANKUR
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just (IntVal (factorial x))
+eval vars (Fact x) = Just (IntVal (factorial x))--MOHAK
+eval vars (Abs x) = Just (IntVal (abs x))--MOHAK
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -66,6 +68,10 @@ digitToInt x = fromEnum x - fromEnum '0'
 factorial :: Expr -> Int
 --factorial 0 = 1
 factorial n =  getVal n * factorial (Val (getVal n - 1))
+--Mohak
+abs:: Expr -> Int
+abs n | getVal n >= 0 = getVal n
+      | otherwise = - getVal n 
 
 ass                         :: Parser (Name, Expr)
 ass                         =  do (a, i) <- ass_int
@@ -94,6 +100,10 @@ algebra                         = do a <- token clause
                                          char '/'
                                          b <- token integer
                                          return (Div (Val a) (Val b))
+                                  ||| do a <- token integer
+                                         char '%'--added this, check if it works
+                                         b <- token integer
+                                         return (Mod (Val a) (Val b))
 
 clause :: Parser Expr
 clause = do char '('
