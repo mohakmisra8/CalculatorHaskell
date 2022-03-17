@@ -145,6 +145,24 @@ alphanum                      =  sat isAlphaNum
 alphanumspace                      :: Parser Char
 alphanumspace                      =  sat isAlphaNumSpace
 
+plusOrMinus                      :: Parser Char
+plusOrMinus                      =  sat isPlusMinus
+
+timesOrDivide                      :: Parser Char
+timesOrDivide                      =  sat isTimesDivide
+
+isPlusMinus :: Char -> Bool
+isPlusMinus c = elem c ['+', '-']
+
+isTimesDivide :: Char -> Bool
+isTimesDivide c = elem c ['*', '/']
+
+isPow :: Char -> Bool
+isPow '^' = True
+
+isFac :: Char -> Bool
+isFac '!' = True
+
 isAlphaNumSpace :: Char -> Bool
 isAlphaNumSpace ' ' = True 
 isAlphaNumSpace c = isAlphaNum c 
