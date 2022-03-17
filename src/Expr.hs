@@ -65,11 +65,39 @@ factorial :: Expr -> Int
 --factorial 0 = 1
 factorial n =  getVal n * factorial (Val (getVal n - 1))
 
-ass                         :: Parser (Name, Lit)
+ass                         :: Parser (Name, Expr)
 ass                         =  do (a, i) <- ass_int
-                                  return (a, IntVal i)
+                                  return (a, Val i)
                                 ||| do (a, s) <- ass_str
-                                       return (a, StrVal s)
+                                       return (a, Str s)
+
+algebra                         :: Parser (Expr)
+algebra                         = do a <- token clause
+                                     char '+'
+                                     b <- token clause
+                                     return (Add a b)  
+                                  ||| do a <- token integer
+                                         char '/'
+                                         b <- algebra
+                                         return (Div (Val a) b)
+                                  ||| do a <- token integer
+                                         char '+'
+                                         b <- algebra
+                                         return (Add (Val a) b)
+                                  ||| do a <- token integer
+                                         char '+'
+                                         b <- token integer
+                                         return (Add (Val a) (Val b))
+                                  ||| do a <- token integer
+                                         char '/'
+                                         b <- token integer
+                                         return (Div (Val a) (Val b))
+
+clause :: Parser Expr
+clause = do char '('
+            a <- algebra
+            char ')'
+            return a
 
 pCommand :: Parser Command
 pCommand = do t <- letter

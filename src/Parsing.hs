@@ -97,8 +97,6 @@ str_cat = do s1 <- token char_seq
          ||| do s <- token char_seq
                 return s
 
-
-
 multi_str_cat :: Parser String
 multi_str_cat = do s1 <- token str_cat
                    string "++"
