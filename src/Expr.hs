@@ -15,7 +15,9 @@ data Expr = Add Expr Expr
           | Var Name
           | Val Int
           | Str String
+          | Lit Lit
           | Fact Expr
+          | Mod Expr
   deriving Show
 
 -- These are the REPL commands
@@ -24,6 +26,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
   deriving Show
 
 data Lit = IntVal Int | StrVal String
+  deriving Show
 
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
@@ -37,6 +40,7 @@ eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
 eval vars (Fact x) = Just (IntVal (factorial x))--MOHAK
+eval vars (Mod x) = Just (IntVal (modulus x))
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -49,12 +53,22 @@ intDiv a b = div (getVal a) (getVal b)
 getVal :: Expr -> Int
 getVal (Val a) = a
 
+getLit :: Expr -> Lit
+getLit (Lit a) = a
+
+-- prints out Str "variable_name" or Val number rather than "variable_name" or number
+litToString :: Lit -> String
+litToString (StrVal a) = a
+
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
---Mohak
+--MOHAK
 factorial :: Expr -> Int
 --factorial 0 = 1
-factorial n =  (getVal) n * factorial (Val (getVal n -1))
+factorial n =  getVal n * factorial (Val (getVal n - 1))
+
+modulus :: Expr-> Int
+modulus x y = (getVal) mod (getVal x) (getVal y) 
 
 pCommand :: Parser Command
 pCommand = do t <- letter
