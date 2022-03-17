@@ -17,10 +17,8 @@ data Expr = Add Expr Expr
           | Str String
           | Lit Lit
           | Fact Expr
-          | Mod Exp<<<<<<< HEAD
           | Mod Expr
-=======
->>>>>>> 5ebe8bf7e61b19df20312c704493bef474792060
+          | Abs Expr
   deriving Show
 
 -- These are the REPL commands
@@ -64,7 +62,7 @@ litToString (StrVal a) = a
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
---MOHAK
+--Mohak
 factorial :: Expr -> Int
 --factorial 0 = 1
 factorial n =  getVal n * factorial (Val (getVal n - 1))
@@ -74,7 +72,10 @@ ass                         =  do (a, i) <- ass_int
                                   return (a, IntVal i)
                                 ||| do (a, s) <- ass_str
                                        return (a, StrVal s)
-r '='
+
+pCommand :: Parser Command
+pCommand = do t <- letter
+              char '='
               Set [t] <$> pExpr
             ||| do string "print"
                    space
@@ -101,7 +102,7 @@ pFactor = do Val . digitToInt <$> digit
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
            e <- pExpr
-           do char '*'
+           do char '*'--multiplication
               t <- pTerm
               e <- pExpr
               return (Mult t e)
