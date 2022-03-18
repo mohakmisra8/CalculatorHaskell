@@ -32,7 +32,7 @@ process st (Set var e)
           return st'
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn (litToString (removeJust ((eval (vars st) (ToString e)))))
+     = do putStrLn $ litToString (removeJust (eval (vars st) e))
           -- Print the result of evaluation
           return st
 

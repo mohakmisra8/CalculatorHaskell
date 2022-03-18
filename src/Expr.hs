@@ -63,6 +63,7 @@ getLit _       = IntVal 0
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
 litToString :: Lit -> String
 litToString (StrVal a) = a
+litToString (IntVal a) = litToString (StrVal (show a))
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
