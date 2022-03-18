@@ -45,17 +45,19 @@ repl :: StateT LState IO ()
 repl = do liftIO $ putStr "> "
           inp <- liftIO getLine
           st <- get
+          if inp == "quit" then return ()
+          else
              --input <- getLinesFromFile "filepath"
              --let inp = head input
           --case [(Set "variable" (Val 5), "")] of
-          case parse pCommand inp of
-                  [(cmd, "")] -> -- Must parse entire input
+               case parse pCommand inp of
+                    [(cmd, "")] -> -- Must parse entire input
                              do st <- liftIO $ process st cmd--st <- process st cmd
                                 put st
                                 st' <- get
                                 repl
-                  _ -> do liftIO $ putStrLn "Parse Error"
-                          repl
+                    _ -> do liftIO $ putStrLn "Parse Error"
+                            repl
 
                           ---move all of this to safety file and test a little bit the other bit
 
