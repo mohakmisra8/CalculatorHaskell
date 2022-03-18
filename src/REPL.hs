@@ -45,6 +45,7 @@ repl st = do putStr "> "
              --case [(Set "variable" (Str "InVariable"), "")] of
              case parse pCommand inp of
                   [(cmd, "")] -> -- Must parse entire input
+                          do putStrLn "Test"
                              process st cmd
                   _ -> do putStrLn "Parse Error"
                           repl st
