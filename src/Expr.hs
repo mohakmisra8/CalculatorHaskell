@@ -27,7 +27,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
   deriving Show
 
 data Lit = IntVal Int | StrVal String
-  deriving Show
+  deriving (Show, Eq)
 
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
