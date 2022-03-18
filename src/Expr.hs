@@ -16,9 +16,7 @@ data Expr = Add Expr Expr
           | Val Int
           | Str String
           | Lit Lit
-          | Fact Expr
-          | Mod Expr
-          | Abs Expr
+          | Fac Expr
   deriving Show
 
 -- These are the REPL commands
@@ -37,12 +35,10 @@ eval vars (Str s) = Just (StrVal s) -- for values, just give the value directly
 eval vars (Var n) = Just (findVar vars n) -- look-up actual value of variable
 eval vars (Add x y) = Just (IntVal (getVal x + getVal y)) -- implemented by DEEPANKUR
 eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEPANKUR
-eval vars (Mod x y) = Just (IntVal (getVal x % getVal y)) -- implemented by DEEPANKUR
 eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fact x) = Just (IntVal (factorial x))--MOHAK
-eval vars (Abs x) = Just (IntVal (abs x))--MOHAK
+eval vars (Fac x) = Just (IntVal (factorial x))
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -68,10 +64,6 @@ digitToInt x = fromEnum x - fromEnum '0'
 factorial :: Expr -> Int
 --factorial 0 = 1
 factorial n =  getVal n * factorial (Val (getVal n - 1))
---Mohak
-abs:: Expr -> Int
-abs n | getVal n >= 0 = getVal n
-      | otherwise = - getVal n 
 
 ass                         :: Parser (Name, Expr)
 ass                         =  do n <- token ident
@@ -84,44 +76,68 @@ ass                         =  do n <- token ident
                                        return (a, Str s)
 
 algebra                         :: Parser (Expr)
-algebra                         = do a <- token clause
-                                     char '+'
-                                     b <- token clause
-                                     return (Add a b)  
+algebra                         =     do a <- token clause
+                                         õ <- pow 
+                                         b <- token clause
+                                         return (op õ  a b)
+                                  ||| do a <- token clause
+                                         õ <- timesOrDivide 
+                                         b <- token clause
+                                         return (op õ  a b) 
+                                  ||| do a <- token clause
+                                         õ <- plusOrMinus
+                                         b <- token clause
+                                         return (op õ  a b) --- broke here below does not work 2
                                   ||| do a <- token integer
-                                         char '/'
+                                         õ <- pow 
                                          b <- algebra
-                                         return (Div (Val a) b)
+                                         return (op õ  (Val a) b)  
+                                  ||| do a <- token integer
+                                         õ <- timesOrDivide 
+                                         b <- algebra
+                                         return (op õ  (Val a) b)
                                   ||| do a <- token integer
                                          õ <- plusOrMinus
                                          b <- algebra
-                                         return ((op õ) (Val a) b)
-                                  ||| do a <- algebra
-                                         õ <- plusOrMinus
-                                         b <- token integer
-                                         return ((op õ) a (Val b))
+                                         return (op õ  (Val a) b)
                                   ||| do a <- token integer
                                          õ <- plusOrMinus
                                          b <- token integer
-                                         return ((op õ) (Val a) (Val b))
+                                         return (op õ (Val a) (Val b))
                                   ||| do a <- token integer
-                                         char '/'
+                                         õ <- timesOrDivide
                                          b <- token integer
-                                         return (Div (Val a) (Val b))
+                                         return (op õ (Val a) (Val b))
                                   ||| do a <- token integer
-                                         char '%'--added this, check if it works
+                                         õ <- pow
                                          b <- token integer
-                                         return (Mod (Val a) (Val b))
+                                         return (op õ (Val a) (Val b))
+                                  ||| do n <- token clause
+                                         return (n)
+                                  ||| do n <- token integer 
+                                         return (Val n)
 
 op :: Char -> Expr -> Expr -> Expr
-op '+' = Add
-op '-' = Sub
+op '+' a b = Add a b
+op '-' a b = Sub a b
+op '*' a b = Mult a b
+op '/' a b = Div a b
+op '^' a b = Pow a b
+op _ _ _ = error "unknown operation"
+
+sop :: Char -> Expr -> Expr 
+sop '!' n = Fac n
+sop _ _ = error "unknown single operation"
 
 clause :: Parser Expr
-clause = do char '('
-            a <- algebra
-            char ')'
-            return a
+clause =     do n <- token integer 
+                õ <- fac 
+                return (sop õ  (Val n))
+         ||| do char '('
+                a <- algebra
+                char ')'
+                return a
+ 
 
 pCommand :: Parser Command
 pCommand = do t <- letter
@@ -138,30 +154,26 @@ pExpr = do t <- pTerm
             ||| do char '-'
                    Sub t <$> pExpr
                  ||| return t
---MOHAK
+
 pFactor :: Parser Expr
 pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
                   e <- pExpr
-                  return (Fact e)
+                  return (Fac e)
                 ||| do char '('
                        e <- pExpr
                        char ')'
                        return e
---MOHAK
+
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
            e <- pExpr
-           do char '*'--multiplication
+           do char '*'
               t <- pTerm
               e <- pExpr
               return (Mult t e)
-            ||| do char '/'--division
+            ||| do char '/'
                    t <- pTerm
                    e <- pExpr
                    return (Div t e) 
-            ||| do char '%'--modulus
-                   t <- pTerm
-                   e <- pExpr
-                   return (Mod t e) 
                  ||| return f
