@@ -25,7 +25,10 @@ removeJust (Just a) = a
 
 process :: LState -> Command -> IO (LState)
 process st (Set var e)
-     = do let st' = LState {vars = updateVars var (getLit e) (vars st)}
+     = do print e
+          let lit = removeJust (eval (vars st) e)
+          -- we need to process the expression here before adding the result to the state
+          let st' = LState {vars = updateVars var lit (vars st)}
           putStrLn "Set variable"
           -- st' should include the variable set to the result of evaluating e
           return st'

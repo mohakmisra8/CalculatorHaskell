@@ -56,6 +56,9 @@ getVal (Val a) = a
 
 getLit :: Expr -> Lit
 getLit (Lit a) = a
+getLit (Val a) = IntVal a
+getLit (Str a) = StrVal a
+getLit _       = IntVal 0
 
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
 litToString :: Lit -> String
