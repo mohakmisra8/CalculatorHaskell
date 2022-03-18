@@ -25,11 +25,9 @@ removeJust (Just a) = a
 
 process :: LState -> Command -> IO (LState)
 process st (Set var e)
-     = do print e
-          let lit = removeJust (eval (vars st) e)
+     = do let lit = removeJust (eval (vars st) e)
           -- we need to process the expression here before adding the result to the state
           let st' = LState {vars = updateVars var lit (vars st)}
-          putStrLn "Set variable"
           -- st' should include the variable set to the result of evaluating e
           return st'
 process st (Print e)
@@ -53,7 +51,8 @@ repl = do liftIO $ putStr "> "
           case parse pCommand inp of
                   [(cmd, "")] -> -- Must parse entire input
                              do st <- liftIO $ process st cmd--st <- process st cmd
-                                liftIO $ print (vars st)
+                                put st
+                                st' <- get
                                 repl
                   _ -> do liftIO $ putStrLn "Parse Error"
                           repl
@@ -72,16 +71,21 @@ repl = do liftIO $ putStr "> "
 --file stuff
 replForFiles :: LState -> String -> IO()
 replForFiles st filepath = do commands <- getLinesFromFile filepath
-                              processMultipleCommands st commands
+                              runStateT (processMultipleCommands commands) st
                               return ()
 
-processMultipleCommands :: LState -> [String] -> IO()
-processMultipleCommands st [] = do putStrLn "Done";
-processMultipleCommands st commands = case parse pCommand (head commands) of
-                                         [(cmd, "")] -> do st <- process st cmd
-                                                           processMultipleCommands st (tail commands)
-                                         _ -> do putStrLn "Error"
-                                                 processMultipleCommands st (tail commands)
+
+
+processMultipleCommands :: [String] -> StateT LState IO ()
+processMultipleCommands [] = do liftIO $ putStrLn "Done"
+                                return ()
+processMultipleCommands commands = case parse pCommand (head commands) of
+                                         [(cmd, "")] -> do st <- get
+                                                           st' <- liftIO $ process st cmd
+                                                           put st'
+                                                           processMultipleCommands (tail commands)
+                                         _ -> do liftIO $ putStrLn "Error Parsing File"
+                                                 return ()
 
 --[(Command, String)]
 --[(Command, "")] do the stuff 
