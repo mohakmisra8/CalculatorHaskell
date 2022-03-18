@@ -17,6 +17,7 @@ data Expr = Add Expr Expr
           | Str String
           | Lit Lit
           | Fac Expr
+          | Abs Expr
   deriving Show
 
 -- These are the REPL commands
@@ -87,7 +88,7 @@ algebra                         =     do a <- token clause
                                   ||| do a <- token clause
                                          õ <- plusOrMinus
                                          b <- token clause
-                                         return (op õ  a b) --- broke here below does not work 2
+                                         return (op õ  a b) 
                                   ||| do a <- token integer
                                          õ <- pow 
                                          b <- algebra
@@ -127,6 +128,7 @@ op _ _ _ = error "unknown operation"
 
 sop :: Char -> Expr -> Expr 
 sop '!' n = Fac n
+sop '|' n = Abs n
 sop _ _ = error "unknown single operation"
 
 clause :: Parser Expr
@@ -137,15 +139,27 @@ clause =     do n <- token integer
                 a <- algebra
                 char ')'
                 return a
+         ||| do char '|'
+                a <- algebra
+                char '|'
+                return (sop '|'  a)
  
 
 pCommand :: Parser Command
-pCommand = do t <- letter
-              char '='
-              Set [t] <$> pExpr
+pCommand = do (t, content) <- ass
+              return (Set t content)
             ||| do string "print"
                    space
-                   Print <$> pExpr
+                   out_math <- algebra
+                   return (Print out_math)
+            ||| do string "print"
+                   space
+                   out_str <- multi_str_cat
+                   return (Print (Str out_str))
+            ||| do string "print"
+                   space
+                   out <- token ident
+                   return (Print (Var out))
 --done by MOHAK
 pExpr :: Parser Expr
 pExpr = do t <- pTerm
