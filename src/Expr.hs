@@ -17,6 +17,7 @@ data Expr = Add Expr Expr
           | Str String
           | Lit Lit
           | Fac Expr
+          | Mod Expr Expr
           | Abs Expr
   deriving Show
 
@@ -40,6 +41,7 @@ eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
 eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
 eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
 eval vars (Fac x) = Just (IntVal (factorial x))
+eval vars (Mod x y) = Just (IntVal ( mod (getVal x) (getVal y) ))--MOHAK
 eval vars (ToString x) = Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
@@ -124,6 +126,7 @@ op '-' a b = Sub a b
 op '*' a b = Mult a b
 op '/' a b = Div a b
 op '^' a b = Pow a b
+op '%' a b = Mod a b
 op _ _ _ = error "unknown operation"
 
 sop :: Char -> Expr -> Expr 
