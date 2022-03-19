@@ -4,6 +4,7 @@ import Expr
 import Parsing
 import Control.Monad.State
 import System.Console.Haskeline
+import System.Console.Haskeline.History
 import Data.List
 
 data LState = LState { vars :: [(Name, Lit)] }
@@ -48,6 +49,8 @@ repl = do maybeInput <- getInputLine "> "
           case maybeInput of
                Nothing     -> return ()
                Just "quit" -> return ()
+               --tab completion leaves a space after the completed word
+               Just "quit "-> return ()
                Just inp    -> do st <- lift get
                                  case parse pCommand inp of
                                       [(cmd, "")] -> do st' <- liftIO $ process st cmd
@@ -78,15 +81,22 @@ repl = do maybeInput <- getInputLine "> "
 haskelineSettings :: Settings (StateT LState IO)
 --maybe change completeWord to completeWordWithPrev need to work out difference
 --can save history to a file, should we??
-haskelineSettings = Settings {complete = completeWord Nothing " \t" $ return . searchHistory,
+haskelineSettings = Settings {complete = completion,
                               autoAddHistory = True,
                               historyFile = Nothing}
 
-searchHistory :: String -> [Completion]
-searchHistory str = map simpleCompletion $ filter (str `isPrefixOf`) exampleList{-need a [String] with the variable names-}
+completion :: CompletionFunc (StateT LState IO)
+completion = completeWord Nothing " \t" tabCompletion
 
-exampleList :: [String]
-exampleList = ["test", "variable"]
+tabCompletion :: String -> StateT LState IO [Completion]
+tabCompletion str = do st <- get
+                       pure $ fmap (\s -> Completion s s True) $ filter (str `isPrefixOf`) ((map fst (vars st)) ++ ["quit"])
+
+--searchHistory :: String -> [Completion]
+--searchHistory str = map simpleCompletion $ filter (str `isPrefixOf`) ()
+
+--exampleList :: [String]
+--exampleList = ["test", "variable", "quit"]
 
 
 
