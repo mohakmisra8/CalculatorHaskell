@@ -151,6 +151,12 @@ plusOrMinus                      =  sat isPlusMinus
 timesOrDivide                      :: Parser Char
 timesOrDivide                      =  sat isTimesDivide
 
+pow                      :: Parser Char
+pow                      =  sat isPow
+
+fac                      :: Parser Char
+fac                      =  sat isFac
+
 isPlusMinus :: Char -> Bool
 isPlusMinus c = elem c ['+', '-']
 
@@ -159,9 +165,11 @@ isTimesDivide c = elem c ['*', '/']
 
 isPow :: Char -> Bool
 isPow '^' = True
+isPow c = False
 
 isFac :: Char -> Bool
 isFac '!' = True
+isFac c = False
 
 isAlphaNumSpace :: Char -> Bool
 isAlphaNumSpace ' ' = True 
