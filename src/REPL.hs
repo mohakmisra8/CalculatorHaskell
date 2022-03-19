@@ -2,6 +2,7 @@ module REPL where
 
 import Expr
 import Parsing
+import Data.Either
 import Control.Monad.State
 import System.Console.Haskeline
 import System.Console.Haskeline.History
@@ -23,19 +24,30 @@ updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
 dropVar n = filter (\x -> fst x /= n)
 
-removeJust :: Either Error a -> a
-removeJust (pure a) = a
+removeJust :: Maybe a -> a
+removeJust (Just a ) = a
+
+removeMaybe :: Either a b -> b
+removeMaybe (Right a) = a
 
 process :: LState -> Command -> IO (LState)
 process st (Set var e)
-     = do let lit = removeJust (eval (vars st) e)
+     = do 
+          if isLeft (eval (vars st) e)
+               --handle error
+               then do putStrLn "handle this error"
+                       return st
+          else do
+               let lit = removeJust (removeMaybe (eval (vars st) e))
+               let st' = LState {vars = updateVars var lit (vars st)}
+               return st'
           -- we need to process the expression here before adding the result to the state
-          let st' = LState {vars = updateVars var lit (vars st)}
+          
           -- st' should include the variable set to the result of evaluating e
-          return st'
+          
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ litToString (removeJust (eval (vars st) e))
+     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (vars st) e))
           -- Print the result of evaluation
           return st
 

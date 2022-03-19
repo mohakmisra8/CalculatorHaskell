@@ -2,6 +2,8 @@ module Expr where
 
 import Parsing
 
+import Data.Either
+
 type Name = String
 
 -- At first, 'Expr' contains only addition, conversion to strings, and integer
@@ -38,18 +40,18 @@ data Error
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
         --Lit
-        --Either Error Lit -- Result (if no errors such as missing variables)
-eval vars (Val x) = Just (IntVal x) -- for values, just give the value directly
-eval vars (Str s) = Just (StrVal s) -- for values, just give the value directly
-eval vars (Var n) = Just (findVar vars n) -- look-up actual value of variable
-eval vars (Add x y) = Just (IntVal (getVal x + getVal y)) -- implemented by DEEPANKUR
-eval vars (Sub x y) = Just (IntVal (getVal x - getVal y)) -- implemented by DEEPANKUR
-eval vars (Div x y) = Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
-eval vars (Mult x y) = Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
-eval vars (Pow x y) = Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fac x) = Just (IntVal (factorial x))
-eval vars (Mod x y) = Just (IntVal ( mod (getVal x) (getVal y) ))--MOHAK
-eval vars (ToString x) = Just (StrVal (show x))
+        Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
+eval vars (Val x) = Right (Just (IntVal x)) -- for values, just give the value directly
+eval vars (Str s) = Right (Just (StrVal s)) -- for values, just give the value directly
+eval vars (Var n) = Right $ Just (findVar vars n) -- look-up actual value of variable
+eval vars (Add x y) = Right $ Just (IntVal (getVal x + getVal y)) -- implemented by DEEPANKUR
+eval vars (Sub x y) = Right $ Just (IntVal (getVal x - getVal y)) -- implemented by DEEPANKUR
+eval vars (Div x y) = Right $ Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
+eval vars (Mult x y) = Right $ Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
+eval vars (Pow x y) = Right $ Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
+eval vars (Fac x) = Right $ Just (IntVal (factorial x))
+eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal x) (getVal y) ))--MOHAK
+eval vars (ToString x) = Right $ Just (StrVal (show x))
 
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
