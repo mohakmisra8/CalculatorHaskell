@@ -6,7 +6,7 @@ type Name = String
 
 -- At first, 'Expr' contains only addition, conversion to strings, and integer
 -- values. You will need to add other operations, and variables
-data Expr = Add Expr Expr
+data Expr = Add Expr Expr 
           | Sub Expr Expr
           | Div Expr Expr
           | Mult Expr Expr
@@ -29,9 +29,16 @@ data Command = Set Name Expr -- assign an expression to a variable name
 data Lit = IntVal Int | StrVal String
   deriving (Show, Eq)
 
+data Error 
+       = UnknownOperationError Char 
+       | SingleOperationError Char
+       deriving Show
+              
+
 eval :: [(Name, Lit)] -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
-        Maybe Lit -- Result (if no errors such as missing variables)
+        --Lit
+        --Either Error Lit -- Result (if no errors such as missing variables)
 eval vars (Val x) = Just (IntVal x) -- for values, just give the value directly
 eval vars (Str s) = Just (StrVal s) -- for values, just give the value directly
 eval vars (Var n) = Just (findVar vars n) -- look-up actual value of variable
@@ -124,7 +131,7 @@ algebra                         =     do a <- token clause
                                   ||| do n <- token integer 
                                          return (Val n)
 
-op :: Char -> Expr -> Expr -> Expr
+op :: Char -> Expr -> Expr ->Expr
 op '+' a b = Add a b
 op '-' a b = Sub a b
 op '*' a b = Mult a b
@@ -132,11 +139,13 @@ op '/' a b = Div a b
 op '^' a b = Pow a b
 op '%' a b = Mod a b
 op _ _ _ = error "unknown operation"
+--op _ _ _ = Left UnknownOperationError
 
 sop :: Char -> Expr -> Expr 
 sop '!' n = Fac n
 sop '|' n = Abs n
-sop _ _ = error "unknown single operation"
+sop _ _ = error "unknown operation"
+--sop _ _ = Left SingleOperationError
 
 clause :: Parser Expr
 clause =     do n <- token integer 

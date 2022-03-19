@@ -20,8 +20,8 @@ updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
 dropVar n = filter (\x -> fst x /= n)
 
-removeJust :: Maybe a -> a
-removeJust (Just a) = a
+removeJust :: Either Error a -> a
+removeJust (pure a) = a
 
 process :: LState -> Command -> IO (LState)
 process st (Set var e)

@@ -171,6 +171,10 @@ isFac :: Char -> Bool
 isFac '!' = True
 isFac c = False
 
+isMod :: Char -> Bool
+isMod '%' = True
+isMod c = False
+
 isAlphaNumSpace :: Char -> Bool
 isAlphaNumSpace ' ' = True 
 isAlphaNumSpace c = isAlphaNum c 
