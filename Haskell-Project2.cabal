@@ -38,6 +38,6 @@ executable Haskell-Project2
     -- LANGUAGE extensions used by modules in this package.
     default-extensions: DeriveAnyClass, DeriveGeneric, TemplateHaskell
     -- other-extensions:
-    build-depends:    base, QuickCheck, aeson, bytestring, directory, mtl
+    build-depends:    base, QuickCheck, aeson, bytestring, directory, mtl, haskeline
     hs-source-dirs:   src 
     default-language: Haskell2010

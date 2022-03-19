@@ -4,10 +4,10 @@ import Parsing
 import Expr
 import REPL
 
-import Control.Monad.State 
-
+import Control.Monad.State
 
 import System.Environment
+import System.Console.Haskeline
 
 main :: IO ()
 main = do putStrLn "Do you want to read code from a file (Yes/No)"
@@ -26,5 +26,8 @@ main = do putStrLn "Do you want to read code from a file (Yes/No)"
 --main = runStateT repl initLState
 
 runRepl :: LState -> IO ()
-runRepl st = do runStateT repl initLState
+runRepl st = --do runInputT defaultSettings (runStateT repl initLState)
+             do runStateT (runInputT haskelineSettings repl) initLState
                 return ()
+
+                
