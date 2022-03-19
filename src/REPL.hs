@@ -3,6 +3,8 @@ module REPL where
 import Expr
 import Parsing
 import Control.Monad.State
+import System.Console.Haskeline
+import Data.List
 
 data LState = LState { vars :: [(Name, Lit)] }
 
@@ -41,29 +43,50 @@ process st (Print e)
 -- 'process' to process the command.
 -- 'process' will call 'repl' when done, so the system loops.
 
-repl :: StateT LState IO ()
-repl = do liftIO $ putStr "> "
-          inp <- liftIO getLine
-          st <- get
-          if inp == "quit" then return ()
-          else
+repl :: InputT (StateT LState IO) ()
+repl = do maybeInput <- getInputLine "> "
+          case maybeInput of
+               Nothing     -> return ()
+               Just "quit" -> return ()
+               Just inp    -> do st <- lift get
+                                 case parse pCommand inp of
+                                      [(cmd, "")] -> do st' <- liftIO $ process st cmd
+                                                        lift $ put st'
+                                                        repl
+                                      _           -> do outputStrLn "Parse Error"
+                                                        repl
+
+--repl = do liftIO $ putStr "> "
+          --inp <- liftIO getLine
+          --st <- get
+          --if inp == "quit" then return ()
+          --else
              --input <- getLinesFromFile "filepath"
              --let inp = head input
           --case [(Set "variable" (Val 5), "")] of
-               case parse pCommand inp of
-                    [(cmd, "")] -> -- Must parse entire input
-                             do st <- liftIO $ process st cmd--st <- process st cmd
-                                put st
-                                st' <- get
-                                repl
-                    _ -> do liftIO $ putStrLn "Parse Error"
-                            repl
+               --case parse pCommand inp of
+                    --[(cmd, "")] -> -- Must parse entire input
+                             --do st <- liftIO $ process st cmd--st <- process st cmd
+                                --put st
+                                --st' <- get
+                                --repl
+                    --_ -> do liftIO $ putStrLn "Parse Error"
+                            --repl
 
                           ---move all of this to safety file and test a little bit the other bit
 
+haskelineSettings :: Settings (StateT LState IO)
+--maybe change completeWord to completeWordWithPrev need to work out difference
+--can save history to a file, should we??
+haskelineSettings = Settings {complete = completeWord Nothing " \t" $ return . searchHistory,
+                              autoAddHistory = True,
+                              historyFile = Nothing}
 
+searchHistory :: String -> [Completion]
+searchHistory str = map simpleCompletion $ filter (str `isPrefixOf`) exampleList{-need a [String] with the variable names-}
 
-
+exampleList :: [String]
+exampleList = ["test", "variable"]
 
 
 
