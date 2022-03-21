@@ -18,7 +18,7 @@ main = do putStrLn "Do you want to read code from a file (Yes/No)"
           --case y of
             --x -> do putStrLn "Enter the filepath for the desired file"
                     --filepath <- getLine
-                    --replForFiles initLState filepath
+          replForFiles initLState "./src/input.txt"
             --y  -> runRepl initLState
             --_     -> do putStrLn "Please enter either Yes or No"
                         --return ()

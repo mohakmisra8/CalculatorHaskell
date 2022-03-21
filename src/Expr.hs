@@ -2,7 +2,10 @@ module Expr where
 
 import Parsing
 
+import Data.Map 
+
 import Data.Either
+import Data.Aeson (Value)
 
 type Name = String
 
@@ -36,11 +39,14 @@ data Error
        | SingleOperationError Char
        deriving Show
               
-
-eval :: [(Name, Lit)] -> -- Variable name to value mapping
-        Expr -> -- Expression to evaluate
+--change with map
+eval :: --[(Name, Lit)] -> -- Variable name to value mapping
+        --Expr -> -- Expression to evaluate
         --Lit
-        Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
+        --Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
+        Map Name Value ->
+        Expr ->
+        Either String Value
 eval vars (Val x) = Right (Just (IntVal x)) -- for values, just give the value directly
 eval vars (Str s) = Right (Just (StrVal s)) -- for values, just give the value directly
 eval vars (Var n) = Right $ Just (findVar vars n) -- look-up actual value of variable
@@ -53,6 +59,7 @@ eval vars (Fac x) = Right $ Just (IntVal (factorial x))
 eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal x) (getVal y) ))--MOHAK
 eval vars (ToString x) = Right $ Just (StrVal (show x))
 
+--change with map
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
                 | otherwise = findVar (drop 1 stack) n
