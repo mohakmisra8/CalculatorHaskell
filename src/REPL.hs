@@ -7,32 +7,22 @@ import Control.Monad.State
 import System.Console.Haskeline
 import System.Console.Haskeline.History
 import Data.List
-import Data.Map
 
-data LState = LState { vars :: Map Name Value }
+data LState = LState { vars :: [(Name, Lit)] }
 
 initLState :: LState
-initLState = LState Map.empty
+initLState = LState []
 
 -- Given a variable name and a value, return a new set of variables with
 -- that name and value added.
 -- If it already exists, remove the old value
 --Should be working -Ewan
-updateVars :: Name -> Lit -> Map Name Value -> Map Name Value
-updateVars n i vars =if Map.member n vars then
-                        Map.adjust (const i) name i
-                     else 
-                          Map.insert n i vars 
+updateVars :: Name -> Lit -> [(Name, Lit)] -> [(Name, Lit)]
+updateVars n i vars = filter (\x -> fst x /= n) vars ++ [(n,i)]
 
 -- Return a new set of variables with the given name removed
 dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
 dropVar n = filter (\x -> fst x /= n)
-
-removeJust :: Maybe a -> a
-removeJust (Just a ) = a
-
-removeMaybe :: Either a b -> b
-removeMaybe (Right a) = a
 
 process :: LState -> Command -> IO (LState)
 process st (Set var e)

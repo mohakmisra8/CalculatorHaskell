@@ -2,12 +2,16 @@ module Expr where
 
 import Parsing
 
-import Data.Map 
-
 import Data.Either
-import Data.Aeson (Value)
+import Data.Text (splitOn)
 
 type Name = String
+
+removeJust :: Maybe a -> a
+removeJust (Just a ) = a
+
+removeMaybe :: Either a b -> b
+removeMaybe (Right a) = a
 
 -- At first, 'Expr' contains only addition, conversion to strings, and integer
 -- values. You will need to add other operations, and variables
@@ -20,10 +24,12 @@ data Expr = Add Expr Expr
           | Var Name
           | Val Int
           | Str String
+          | Bool Bool 
           | Lit Lit
           | Fac Expr
           | Mod Expr Expr
           | Abs Expr
+          | And Expr Expr
   deriving Show
 
 -- These are the REPL commands
@@ -31,7 +37,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
   deriving Show
 
-data Lit = IntVal Int | StrVal String
+data Lit = IntVal Int | StrVal String | BoolVal Bool
   deriving (Show, Eq)
 
 data Error 
@@ -39,36 +45,40 @@ data Error
        | SingleOperationError Char
        deriving Show
               
---change with map
-eval :: --[(Name, Lit)] -> -- Variable name to value mapping
-        --Expr -> -- Expression to evaluate
+
+eval :: [(Name, Lit)] -> -- Variable name to value mapping
+        Expr -> -- Expression to evaluate
         --Lit
-        --Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
-        Map Name Value ->
-        Expr ->
-        Either String Value
+        Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
 eval vars (Val x) = Right (Just (IntVal x)) -- for values, just give the value directly
 eval vars (Str s) = Right (Just (StrVal s)) -- for values, just give the value directly
+eval vars (Bool b) = Right (Just (BoolVal b)) -- for values, just give the value directly
 eval vars (Var n) = Right $ Just (findVar vars n) -- look-up actual value of variable
-eval vars (Add x y) = Right $ Just (IntVal (getVal x + getVal y)) -- implemented by DEEPANKUR
-eval vars (Sub x y) = Right $ Just (IntVal (getVal x - getVal y)) -- implemented by DEEPANKUR
-eval vars (Div x y) = Right $ Just (IntVal (intDiv x y)) -- implemented by DEEPANKUR
-eval vars (Mult x y) = Right $ Just (IntVal (getVal x * getVal y)) -- implemented by DEEPANKUR
-eval vars (Pow x y) = Right $ Just (IntVal (getVal x ^ getVal y)) -- implemented by DEEPANKUR
-eval vars (Fac x) = Right $ Just (IntVal (factorial x))
-eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal x) (getVal y) ))--MOHAK
+eval vars (Add x y) = Right $ Just (IntVal (getVal vars x + getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Sub x y) = Right $ Just (IntVal (getVal vars x - getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Div x y) = Right $ Just (IntVal (intDiv vars x y)) -- implemented by DEEPANKUR
+eval vars (Mult x y) = Right $ Just (IntVal (getVal vars x * getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Pow x y) = Right $ Just (IntVal (getVal vars x ^ getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Fac x) = Right $ Just (IntVal (factorial vars x))
+eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal vars x) (getVal vars y) ))--MOHAK
 eval vars (ToString x) = Right $ Just (StrVal (show x))
 
---change with map
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
                 | otherwise = findVar (drop 1 stack) n
 
-intDiv :: Expr -> Expr -> Int
-intDiv a b = div (getVal a) (getVal b)
+intDiv :: [(Name, Lit)] -> Expr -> Expr -> Int
+intDiv vars a b = div (getVal vars a) (getVal vars b)
 
-getVal :: Expr -> Int
-getVal (Val a) = a
+getVal :: [(Name, Lit)] -> Expr -> Int
+getVal vars (Val a) = a
+getVal vars expr = toInt vars (eval vars expr)
+
+toInt :: [(Name, Lit)] -> Either Error (Maybe Lit) -> Int
+toInt vars result | isLeft result = error "not integer"
+                  | otherwise = getVal vars (getExpr (removeJust (removeMaybe result)))
+
+
 
 getLit :: Expr -> Lit
 getLit (Lit a) = a
@@ -76,17 +86,23 @@ getLit (Val a) = IntVal a
 getLit (Str a) = StrVal a
 getLit _       = IntVal 0
 
+getExpr :: Lit -> Expr
+getExpr (IntVal a) = Val a
+getExpr (StrVal a) = Str a
+getExpr _       = Val 0
+
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
 litToString :: Lit -> String
 litToString (StrVal a) = a
 litToString (IntVal a) = litToString (StrVal (show a))
+litToString (BoolVal a) = litToString (StrVal (show a))
 
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
 --Mohak
-factorial :: Expr -> Int
+factorial :: [(Name, Lit)] -> Expr -> Int
 --factorial 0 = 1
-factorial n =  getVal n * factorial (Val (getVal n - 1))
+factorial vars n =  getVal vars n * factorial vars (Val (getVal vars n - 1))
 
 ass                         :: Parser (Name, Expr)
 ass                         =  do n <- token ident
@@ -97,6 +113,12 @@ ass                         =  do n <- token ident
                                       return (a, Val i)
                                 ||| do (a, s) <- ass_str
                                        return (a, Str s)
+                                ||| do (a, b) <- ass_bool
+                                       return (a, b)
+
+strToBool :: String -> Expr
+strToBool s | elem s ["T", "true", "True", "1"] = Bool True 
+            | elem s ["F", "false", "False", "0"] = Bool False
 
 algebra                         :: Parser (Expr)
 algebra                         =     do a <- token clause
@@ -139,6 +161,34 @@ algebra                         =     do a <- token clause
                                          return (n)
                                   ||| do n <- token integer 
                                          return (Val n)
+
+ass_bool                         :: Parser (String, Expr)
+ass_bool                         =  do a <- token ident
+                                       char '='
+                                       b <- token boolean
+                                       return (a, b)
+
+boolean :: Parser Expr
+boolean = do a <- token bool_literal
+             string "&&"
+             b <- token boolean
+             return (And (strToBool a) b)
+      ||| do a <- token bool_exp
+             string "&&"
+             b <- token bool_exp
+             return (And a b)
+      ||| do b <- token bool_exp
+             return (b)
+      
+
+
+bool_exp :: Parser Expr
+bool_exp = do char '('
+              b <- boolean
+              char ')'
+              return (b)
+      ||| do b <- token bool_literal
+             return (strToBool b)
 
 op :: Char -> Expr -> Expr ->Expr
 op '+' a b = Add a b
