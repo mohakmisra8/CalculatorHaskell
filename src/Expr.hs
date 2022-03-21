@@ -30,6 +30,8 @@ data Expr = Add Expr Expr
           | Mod Expr Expr
           | Abs Expr
           | And Expr Expr
+          | Implies Expr Expr
+          | Or Expr Expr
   deriving Show
 
 -- These are the REPL commands
@@ -62,6 +64,11 @@ eval vars (Pow x y) = Right $ Just (IntVal (getVal vars x ^ getVal vars y)) -- i
 eval vars (Fac x) = Right $ Just (IntVal (factorial vars x))
 eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal vars x) (getVal vars y) ))--MOHAK
 eval vars (ToString x) = Right $ Just (StrVal (show x))
+eval vars (And a b) = Right $ Just (BoolVal (getBool vars a && getBool vars b)) -- implemented by DEEPANKUR
+
+getBool :: [(Name, Lit)] -> Expr -> Bool
+getBool vars (Bool b) = b
+getBool vars expr = toBool vars (eval vars expr)
 
 findVar :: [(Name, Lit)] -> Name -> Lit
 findVar stack n | fst (stack!!0) == n  = snd (head stack)
@@ -78,6 +85,9 @@ toInt :: [(Name, Lit)] -> Either Error (Maybe Lit) -> Int
 toInt vars result | isLeft result = error "not integer"
                   | otherwise = getVal vars (getExpr (removeJust (removeMaybe result)))
 
+toBool :: [(Name, Lit)] -> Either Error (Maybe Lit) -> Bool
+toBool vars result | isLeft result = error "not boolean"
+                  | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
 
 
 getLit :: Expr -> Lit
@@ -170,6 +180,22 @@ ass_bool                         =  do a <- token ident
 
 boolean :: Parser Expr
 boolean = do a <- token bool_literal
+             string "||"
+             b <- token boolean
+             return (Or (strToBool a) b)
+      ||| do a <- token bool_exp
+             string "||"
+             b <- token bool_exp
+             return (Or a b)
+      ||| do a <- token bool_literal
+             string "->"
+             b <- token boolean
+             return (Implies (strToBool a) b)
+      ||| do a <- token bool_exp
+             string "->"
+             b <- token bool_exp
+             return (Implies a b)
+      ||| do a <- token bool_literal
              string "&&"
              b <- token boolean
              return (And (strToBool a) b)
