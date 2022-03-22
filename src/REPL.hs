@@ -18,6 +18,7 @@ initLState = LState Map.empty
 -- that name and value added.
 -- If it already exists, remove the old value
 --Should be working -Ewan
+--changed with maps by Mohak
 updateVars :: Name -> Lit -> Map Name Value -> Map Name Value
 updateVars n i vars =if Map.member n vars then
                         Map.adjust (const i) name i

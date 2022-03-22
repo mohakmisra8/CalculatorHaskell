@@ -39,7 +39,7 @@ data Error
        | SingleOperationError Char
        deriving Show
               
---change with map
+--change with map by Mohak
 eval :: --[(Name, Lit)] -> -- Variable name to value mapping
         --Expr -> -- Expression to evaluate
         --Lit
