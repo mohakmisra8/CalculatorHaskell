@@ -13,19 +13,17 @@ import Data.Map
 import qualified Data.Map as Map
 
 main :: IO ()
-main = do putStrLn "Do you want to read code from a file (Yes/No)"
+main = do putStrLn "Do you want to read code from a file (y/n)"
           input <- getLine
           --should add check for one valid filepath argument
-          --let x = "Yes"
-          --let y = "No"
-          --case y of
-            --x -> do putStrLn "Enter the filepath for the desired file"
-                    --filepath <- getLine
-          replForFiles initLState "./src/input.txt"
-            --y  -> runRepl initLState
-            --_     -> do putStrLn "Please enter either Yes or No"
-                        --return ()
-          runRepl initLState
+          case input of
+            "y" -> do putStrLn "Enter the filepath for the desired file"
+                      filepath <- getLine
+                      replForFiles initLState filepath
+            "n"  -> runRepl initLState
+            _     -> do putStrLn "Please enter either Yes or No"
+                        return ()
+          --runRepl initLState
 --main = runStateT repl initLState
 
 runRepl :: Map Name Lit -> IO ()
