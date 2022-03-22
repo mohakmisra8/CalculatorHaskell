@@ -50,6 +50,16 @@
   (major1) == 0 && (major2) <  11 || \
   (major1) == 0 && (major2) == 11 && (minor) <= 1)
 #endif /* MIN_VERSION_bytestring */
+/* package containers-0.6.5.1 */
+#ifndef VERSION_containers
+#define VERSION_containers "0.6.5.1"
+#endif /* VERSION_containers */
+#ifndef MIN_VERSION_containers
+#define MIN_VERSION_containers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  6 || \
+  (major1) == 0 && (major2) == 6 && (minor) <= 5)
+#endif /* MIN_VERSION_containers */
 /* package directory-1.3.6.2 */
 #ifndef VERSION_directory
 #define VERSION_directory "1.3.6.2"
@@ -80,6 +90,16 @@
   (major1) == 2 && (major2) <  2 || \
   (major1) == 2 && (major2) == 2 && (minor) <= 2)
 #endif /* MIN_VERSION_mtl */
+/* package text-1.2.5.0 */
+#ifndef VERSION_text
+#define VERSION_text "1.2.5.0"
+#endif /* VERSION_text */
+#ifndef MIN_VERSION_text
+#define MIN_VERSION_text(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  2 || \
+  (major1) == 1 && (major2) == 2 && (minor) <= 5)
+#endif /* MIN_VERSION_text */
 
 /* tool gcc-10.2.0 */
 #ifndef TOOL_VERSION_gcc

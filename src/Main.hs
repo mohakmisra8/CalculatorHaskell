@@ -9,6 +9,9 @@ import Control.Monad.State
 import System.Environment
 import System.Console.Haskeline
 
+import Data.Map 
+import qualified Data.Map as Map
+
 main :: IO ()
 main = do putStrLn "Do you want to read code from a file (Yes/No)"
           input <- getLine
@@ -25,7 +28,7 @@ main = do putStrLn "Do you want to read code from a file (Yes/No)"
           runRepl initLState
 --main = runStateT repl initLState
 
-runRepl :: LState -> IO ()
+runRepl :: Map Name Lit -> IO ()
 runRepl st = --do runInputT defaultSettings (runStateT repl initLState)
              do runStateT (runInputT haskelineSettings repl) initLState
                 return ()
