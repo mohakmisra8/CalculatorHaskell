@@ -80,6 +80,7 @@ ass_str                         =  do a <- token ident
                                       char '='
                                       b <- token multi_str_cat
                                       return (a, b)
+       
 
 char_seq :: Parser String
 char_seq = do char '"'
@@ -124,7 +125,7 @@ sat p                         =  do x <- item
                                     if p x then return x else failure
 
 bigsat                           :: (String -> Bool) -> Parser String
-bigsat p                         =  do x <- ident
+bigsat p                         =  do x <- identnum
                                        if p x then return x else failure
 
 digit                         :: Parser Char
@@ -156,6 +157,12 @@ pow                      =  sat isPow
 
 fac                      :: Parser Char
 fac                      =  sat isFac
+
+bool_literal                      :: Parser String
+bool_literal                      =  bigsat isBool
+
+isBool :: String -> Bool
+isBool s = elem s ["F", "T", "true", "false", "True", "False", "0", "1"]
 
 isPlusMinus :: Char -> Bool
 isPlusMinus c = elem c ['+', '-']
@@ -197,9 +204,14 @@ many1 p                       =  do v  <- p
                                     return (v:vs)
 
 ident                         :: Parser String
-ident                         =  do x  <- lower
+ident                         =  do x  <- letter
                                     xs <- many alphanum
                                     return (x:xs)
+
+identnum                         :: Parser String
+identnum                         =  do x  <- alphanum
+                                       xs <- many alphanum
+                                       return (x:xs)
 
 nat                           :: Parser Int
 nat                           =  do xs <- many1 digit

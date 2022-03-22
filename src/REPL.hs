@@ -6,45 +6,40 @@ import Data.Either
 import Control.Monad.State
 import System.Console.Haskeline
 import System.Console.Haskeline.History
+import Data.Map 
+import qualified Data.Map as Map
 import Data.List
-import Data.Map
 
-data LState = LState { vars :: Map Name Value }
+data LState = LState { vars :: [(Name, Lit)] }
 
-initLState :: LState
-initLState = LState Map.empty
+initLState :: Map Name Lit 
+initLState = Map.empty
 
 -- Given a variable name and a value, return a new set of variables with
 -- that name and value added.
 -- If it already exists, remove the old value
 --Should be working -Ewan
 --changed with maps by Mohak
-updateVars :: Name -> Lit -> Map Name Value -> Map Name Value
+updateVars :: Name -> Lit -> Map Name Lit -> Map Name Lit
 updateVars n i vars =if Map.member n vars then
-                        Map.adjust (const i) name i
+                        Map.adjust (const i) n vars
                      else 
                           Map.insert n i vars 
 
 -- Return a new set of variables with the given name removed
-dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
-dropVar n = filter (\x -> fst x /= n)
+--dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
+--dropVar n = filter (\x -> fst x /= n)
 
-removeJust :: Maybe a -> a
-removeJust (Just a ) = a
-
-removeMaybe :: Either a b -> b
-removeMaybe (Right a) = a
-
-process :: LState -> Command -> IO (LState)
+process :: Map Name Lit -> Command -> IO (Map Name Lit)
 process st (Set var e)
      = do 
-          if isLeft (eval (vars st) e)
+          if isLeft (eval (st) e)
                --handle error
                then do putStrLn "handle this error"
                        return st
           else do
-               let lit = removeJust (removeMaybe (eval (vars st) e))
-               let st' = LState {vars = updateVars var lit (vars st)}
+               let lit = removeJust (removeMaybe (eval (st) e))
+               let st' = updateVars var lit (st)
                return st'
           -- we need to process the expression here before adding the result to the state
           
@@ -52,7 +47,7 @@ process st (Set var e)
           
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (vars st) e))
+     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (st) e))
           -- Print the result of evaluation
           return st
 
@@ -61,7 +56,7 @@ process st (Print e)
 -- 'process' to process the command.
 -- 'process' will call 'repl' when done, so the system loops.
 
-repl :: InputT (StateT LState IO) ()
+repl :: InputT (StateT (Map Name Lit) IO) ()
 repl = do maybeInput <- getInputLine "> "
           case maybeInput of
                Nothing     -> return ()
@@ -95,19 +90,19 @@ repl = do maybeInput <- getInputLine "> "
 
                           ---move all of this to safety file and test a little bit the other bit
 
-haskelineSettings :: Settings (StateT LState IO)
+haskelineSettings :: Settings (StateT (Map Name Lit) IO)
 --maybe change completeWord to completeWordWithPrev need to work out difference
 --can save history to a file, should we??
 haskelineSettings = Settings {complete = completion,
                               autoAddHistory = True,
                               historyFile = Nothing}
 
-completion :: CompletionFunc (StateT LState IO)
+completion :: CompletionFunc (StateT (Map Name Lit) IO)
 completion = completeWord Nothing " \t" tabCompletion
 
-tabCompletion :: String -> StateT LState IO [Completion]
+tabCompletion :: String -> StateT (Map Name Lit) IO [Completion]
 tabCompletion str = do st <- get
-                       pure $ fmap (\s -> Completion s s True) $ filter (str `isPrefixOf`) ((map fst (vars st)) ++ ["quit"])
+                       pure $ fmap (\s -> Completion s s True) $ Prelude.filter (str `isPrefixOf`) (((keys st)) ++ ["quit"])
 
 --searchHistory :: String -> [Completion]
 --searchHistory str = map simpleCompletion $ filter (str `isPrefixOf`) ()
@@ -121,14 +116,14 @@ tabCompletion str = do st <- get
 
 
 --file stuff
-replForFiles :: LState -> String -> IO()
+replForFiles :: Map Name Lit -> String -> IO()
 replForFiles st filepath = do commands <- getLinesFromFile filepath
                               runStateT (processMultipleCommands commands) st
                               return ()
 
 
 
-processMultipleCommands :: [String] -> StateT LState IO ()
+processMultipleCommands :: [String] -> StateT (Map Name Lit) IO ()
 processMultipleCommands [] = do liftIO $ putStrLn "Done"
                                 return ()
 processMultipleCommands commands = case parse pCommand (head commands) of
