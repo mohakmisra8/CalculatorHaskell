@@ -125,7 +125,7 @@ sat p                         =  do x <- item
                                     if p x then return x else failure
 
 bigsat                           :: (String -> Bool) -> Parser String
-bigsat p                         =  do x <- identnum
+bigsat p                         =  do x <- many item
                                        if p x then return x else failure
 
 digit                         :: Parser Char
@@ -160,6 +160,13 @@ fac                      =  sat isFac
 
 bool_literal                      :: Parser String
 bool_literal                      =  bigsat isBool
+
+comparator                      :: Parser String
+comparator                       =  string ">=" ||| string "<=" ||| string "==" ||| string ">" ||| string "<" ||| string "~="
+
+
+
+                            
 
 isBool :: String -> Bool
 isBool s = elem s ["F", "T", "true", "false", "True", "False", "0", "1"]
