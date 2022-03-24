@@ -140,8 +140,8 @@ ass                         =  do n <- token ident
                                        return (a, b)
 
 strToBool :: String -> Expr
-strToBool s | elem s ["T", "true", "True", "1"] = Bool True
-            | elem s ["F", "false", "False", "0"] = Bool False
+strToBool s | elem s ["$T", "$true", "$True", "$1"] = Bool True
+            | elem s ["$F", "$false", "$False", "$0"] = Bool False
 
 algebra                         :: Parser (Expr)
 algebra                         =     do a <- token clause
@@ -229,7 +229,7 @@ while = do char '?'
            return (cond, body)
 
 repeat :: Parser Command
-repeat = do token (string "repeat")
+repeat = do token (char '#')
             num <- token int
             space
             char '{'
