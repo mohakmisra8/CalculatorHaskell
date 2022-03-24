@@ -4,7 +4,7 @@ import Parsing
 
 import Data.Either
 import Data.Text (splitOn)
-import Data.Map 
+import Data.Map
 import qualified Data.Map as Map
 
 type Name = String
@@ -17,7 +17,7 @@ removeMaybe (Right a) = a
 
 -- At first, 'Expr' contains only addition, conversion to strings, and integer
 -- values. You will need to add other operations, and variables
-data Expr = Add Expr Expr 
+data Expr = Add Expr Expr
           | Sub Expr Expr
           | Div Expr Expr
           | Mult Expr Expr
@@ -26,7 +26,7 @@ data Expr = Add Expr Expr
           | Var Name
           | Val Int
           | Str String
-          | Bool Bool 
+          | Bool Bool
           | Lit Lit
           | Fac Expr
           | Mod Expr Expr
@@ -43,17 +43,18 @@ data Expr = Add Expr Expr
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
-             | While Expr [Command] -- evaluate an expression and run a series of commands while it is true
+             | While Expr [Command]
+             | Repeat Int [Command] -- evaluate an expression and run a series of commands while it is true
   deriving Show
 
 data Lit = IntVal Int | StrVal String | BoolVal Bool
   deriving (Show, Eq)
 
-data Error 
-       = UnknownOperationError Char 
+data Error
+       = UnknownOperationError Char
        | SingleOperationError Char
        deriving Show
-              
+
 
 eval :: Map Name Lit -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
@@ -80,7 +81,7 @@ getBool vars (Bool b) = b
 getBool vars expr = toBool vars (eval vars expr)
 
 findVar :: Map Name Lit -> Name -> Lit --find index
-findVar stack n = IntVal $ findIndex n stack 
+findVar stack n = IntVal $ findIndex n stack
 
 intDiv :: Map Name Lit -> Expr -> Expr -> Int
 intDiv vars a b = div (getVal vars a) (getVal vars b)
@@ -135,28 +136,28 @@ ass                         =  do n <- token ident
                                        return (a, b)
 
 strToBool :: String -> Expr
-strToBool s | elem s ["T", "true", "True", "1"] = Bool True 
+strToBool s | elem s ["T", "true", "True", "1"] = Bool True
             | elem s ["F", "false", "False", "0"] = Bool False
 
 algebra                         :: Parser (Expr)
 algebra                         =     do a <- token clause
-                                         õ <- pow 
+                                         õ <- pow
                                          b <- token clause
                                          return (op õ  a b)
                                   ||| do a <- token clause
-                                         õ <- timesOrDivide 
+                                         õ <- timesOrDivide
                                          b <- token clause
-                                         return (op õ  a b) 
+                                         return (op õ  a b)
                                   ||| do a <- token clause
                                          õ <- plusOrMinus
                                          b <- token clause
-                                         return (op õ  a b) 
+                                         return (op õ  a b)
                                   ||| do a <- token value_int
-                                         õ <- pow 
+                                         õ <- pow
                                          b <- algebra
-                                         return (op õ  a b)  
+                                         return (op õ  a b)
                                   ||| do a <- token value_int
-                                         õ <- timesOrDivide 
+                                         õ <- timesOrDivide
                                          b <- algebra
                                          return (op õ  a b)
                                   ||| do a <- token value_int
@@ -213,7 +214,7 @@ boolean = do a <- token bool_literal
              return (And a b)
       ||| do b <- token bool_exp
              return (b)
-      
+
 while :: Parser (Expr, [Command])
 while = do char '?'
            cond <- token boolean
@@ -223,6 +224,16 @@ while = do char '?'
            token (string ">>")
            return (cond, body)
 
+repeat :: Parser Command
+repeat = do token (string "repeat")
+            num <- token int
+            space
+            char '{'
+            body <- many pCommand
+            char '}'
+            return (Repeat num body)
+
+
 bool_exp :: Parser Expr
 bool_exp = do char '('
               b <- token boolean
@@ -230,14 +241,14 @@ bool_exp = do char '('
               return (b)
       ||| do char '~'
              b <- token boolean
-             return (Not b)    
+             return (Not b)
       ||| do b <- token bool_literal
              return (strToBool b)
       ||| do a <- algebra
              x <- comparator
-             b <- algebra  
+             b <- algebra
              return (dop x a b)
-       
+
 op :: Char -> Expr -> Expr -> Expr
 op '+' a b = Add a b
 op '-' a b = Sub a b
@@ -248,16 +259,16 @@ op '%' a b = Mod a b
 op _ _ _ = error "unknown operation"
 --op _ _ _ = Left UnknownOperationError
 
-sop :: Char -> Expr -> Expr 
+sop :: Char -> Expr -> Expr
 sop '!' n = Fac n
 sop '|' n = Abs n
 sop _ _ = error "unknown operation"
 --sop _ _ = Left SingleOperationError
 
-dop :: String -> Expr -> Expr -> Expr 
+dop :: String -> Expr -> Expr -> Expr
 dop "==" a b = Same a b
-dop ">" a b = Greater a b 
-dop "<" a b = Less a b 
+dop ">" a b = Greater a b
+dop "<" a b = Less a b
 dop ">=" a b = Or (Greater a b) (Same a b)
 dop "<=" a b = Or (Less a b) (Same a b)
 dop "~=" a b = Not (Same a b)
@@ -265,8 +276,8 @@ dop _ _ _ = error "unknown operation"
 --dop _ _ = Left DoubleOperationError
 
 clause :: Parser Expr
-clause =     do n <- token value_int 
-                õ <- fac 
+clause =     do n <- token value_int
+                õ <- fac
                 return (sop õ  n)
          ||| do char '('
                 a <- algebra
@@ -279,23 +290,25 @@ clause =     do n <- token value_int
 
 
 value_int                      :: Parser Expr
-value_int                    =  do name <- token ident 
+value_int                    =  do name <- token ident
                                    return (Var name)
                         ||| do int <- token integer
                                return (Val int)
 
 value_bool                      :: Parser Expr
-value_bool                    =  do name <- token ident 
+value_bool                    =  do name <- token ident
                                     return (Var name)
-                        ||| do bl <- token bool_literal 
+                        ||| do bl <- token bool_literal
                                return (strToBool bl)
-  
+
 
 pCommand :: Parser Command
 pCommand = do (cond, body) <- while
               return (While cond body)
         |||do (t, content) <- ass
               return (Set t content)
+        |||do command <- Expr.repeat
+              return command
             ||| do string "print"
                    space
                    out_math <- algebra
@@ -337,5 +350,5 @@ pTerm = do f <- pFactor
             ||| do char '/'
                    t <- pTerm
                    e <- pExpr
-                   return (Div t e) 
+                   return (Div t e)
                  ||| return f
