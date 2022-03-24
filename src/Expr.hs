@@ -34,11 +34,16 @@ data Expr = Add Expr Expr
           | And Expr Expr
           | Implies Expr Expr
           | Or Expr Expr
+          | Same Expr Expr
+          | Less Expr Expr
+          | Greater Expr Expr
+          | Not Expr
   deriving Show
 
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
+             | While Expr [Command] -- evaluate an expression and run a series of commands while it is true
   deriving Show
 
 data Lit = IntVal Int | StrVal String | BoolVal Bool
@@ -66,7 +71,7 @@ eval vars (Pow x y) = Right $ Just (IntVal (getVal vars x ^ getVal vars y)) -- i
 eval vars (Fac x) = Right $ Just (IntVal (factorial vars x))
 eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal vars x) (getVal vars y) ))--MOHAK
 eval vars (ToString x) = Right $ Just (StrVal (show x))
-eval vars (And a b) = Right $ Just (BoolVal (getBool vars a && getBool vars b)) -- implemented by DEEPANKUR
+eval vars (And a b) = Right $ Just (BoolVal (getBool vars a && getBool vars b)) -- implemented by DEEPANKUR 
 
 getBool :: Map Name Lit -> Expr -> Bool
 getBool vars (Bool b) = b
@@ -144,34 +149,34 @@ algebra                         =     do a <- token clause
                                          õ <- plusOrMinus
                                          b <- token clause
                                          return (op õ  a b) 
-                                  ||| do a <- token integer
+                                  ||| do a <- token value_int
                                          õ <- pow 
                                          b <- algebra
-                                         return (op õ  (Val a) b)  
-                                  ||| do a <- token integer
+                                         return (op õ  a b)  
+                                  ||| do a <- token value_int
                                          õ <- timesOrDivide 
                                          b <- algebra
-                                         return (op õ  (Val a) b)
-                                  ||| do a <- token integer
+                                         return (op õ  a b)
+                                  ||| do a <- token value_int
                                          õ <- plusOrMinus
                                          b <- algebra
-                                         return (op õ  (Val a) b)
-                                  ||| do a <- token integer
+                                         return (op õ  a b)
+                                  ||| do a <- token value_int
                                          õ <- plusOrMinus
-                                         b <- token integer
-                                         return (op õ (Val a) (Val b))
-                                  ||| do a <- token integer
+                                         b <- token value_int
+                                         return (op õ a b)
+                                  ||| do a <- token value_int
                                          õ <- timesOrDivide
-                                         b <- token integer
-                                         return (op õ (Val a) (Val b))
-                                  ||| do a <- token integer
+                                         b <- token value_int
+                                         return (op õ a b)
+                                  ||| do a <- token value_int
                                          õ <- pow
-                                         b <- token integer
-                                         return (op õ (Val a) (Val b))
+                                         b <- token value_int
+                                         return (op õ a b)
                                   ||| do n <- token clause
                                          return (n)
-                                  ||| do n <- token integer 
-                                         return (Val n)
+                                  ||| do n <- token value_int
+                                         return n
 
 ass_bool                         :: Parser (String, Expr)
 ass_bool                         =  do a <- token ident
@@ -207,17 +212,31 @@ boolean = do a <- token bool_literal
       ||| do b <- token bool_exp
              return (b)
       
-
+while :: Parser (Expr, [Command])
+while = do token (char '?')
+           cond <- token boolean
+           token (char '?')
+           token (string "<<")
+           body <- many pCommand
+           token (string ">>")
+           return (cond, body)
 
 bool_exp :: Parser Expr
 bool_exp = do char '('
-              b <- boolean
+              b <- token boolean
               char ')'
               return (b)
+      ||| do char '~'
+             b <- token boolean
+             return (Not b)    
       ||| do b <- token bool_literal
              return (strToBool b)
-
-op :: Char -> Expr -> Expr ->Expr
+      ||| do a <- algebra
+             x <- comparator
+             b <- algebra  
+             return (dop x a b)
+       
+op :: Char -> Expr -> Expr -> Expr
 op '+' a b = Add a b
 op '-' a b = Sub a b
 op '*' a b = Mult a b
@@ -233,10 +252,20 @@ sop '|' n = Abs n
 sop _ _ = error "unknown operation"
 --sop _ _ = Left SingleOperationError
 
+dop :: String -> Expr -> Expr -> Expr 
+dop "==" a b = Same a b
+dop ">" a b = Greater a b 
+dop "<" a b = Less a b 
+dop ">=" a b = Or (Greater a b) (Same a b)
+dop "<=" a b = Or (Less a b) (Same a b)
+dop "~=" a b = Not (Same a b)
+dop _ _ _ = error "unknown operation"
+--dop _ _ = Left DoubleOperationError
+
 clause :: Parser Expr
-clause =     do n <- token integer 
+clause =     do n <- token value_int 
                 õ <- fac 
-                return (sop õ  (Val n))
+                return (sop õ  n)
          ||| do char '('
                 a <- algebra
                 char ')'
@@ -245,10 +274,25 @@ clause =     do n <- token integer
                 a <- algebra
                 char '|'
                 return (sop '|'  a)
- 
+
+
+value_int                      :: Parser Expr
+value_int                    =  do name <- token ident 
+                                   return (Var name)
+                        ||| do int <- token integer
+                               return (Val int)
+
+value_bool                      :: Parser Expr
+value_bool                    =  do name <- token ident 
+                                    return (Var name)
+                        ||| do bl <- token bool_literal 
+                               return (strToBool bl)
+  
 
 pCommand :: Parser Command
-pCommand = do (t, content) <- ass
+pCommand = do (cond, body) <- while
+              return (While cond body)
+        |||do (t, content) <- ass
               return (Set t content)
             ||| do string "print"
                    space

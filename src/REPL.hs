@@ -51,6 +51,14 @@ process st (Print e)
           -- Print the result of evaluation
           return st
 
+process st (While c body)
+     | removeJust (removeMaybe (eval (st) c)) == BoolVal False = return st
+     | length body == 1 = do st' <- liftIO $ (process st (body!!0))
+                             return st'
+     | otherwise = do st' <- liftIO $ (process st (body!!0))
+                      st'' <- liftIO $ (process st' (While c (Data.List.drop 1 body)))
+                      return st''
+
 -- Read, Eval, Print Loop
 -- This reads and parses the input using the pCommand parser, and calls
 -- 'process' to process the command.
