@@ -72,6 +72,8 @@ eval vars (Fac x) = Right $ Just (IntVal (factorial vars x))
 eval vars (Mod x y) = Right $ Just (IntVal ( mod (getVal vars x) (getVal vars y) ))--MOHAK
 eval vars (ToString x) = Right $ Just (StrVal (show x))
 eval vars (And a b) = Right $ Just (BoolVal (getBool vars a && getBool vars b)) -- implemented by DEEPANKUR 
+eval vars (Or a b) = Right $ Just (BoolVal (getBool vars a || getBool vars b)) -- implemented by DEEPANKUR 
+eval vars (Implies a b) = Right $ Just (BoolVal (getBool vars (And (Not a) b))) -- implemented by DEEPANKUR 
 
 getBool :: Map Name Lit -> Expr -> Bool
 getBool vars (Bool b) = b
@@ -186,36 +188,36 @@ ass_bool                         =  do a <- token ident
 
 boolean :: Parser Expr
 boolean = do a <- token bool_literal
-             string "||"
+             token (string "||")
              b <- token boolean
              return (Or (strToBool a) b)
       ||| do a <- token bool_exp
-             string "||"
+             token (string "||")
              b <- token bool_exp
              return (Or a b)
       ||| do a <- token bool_literal
-             string "->"
+             token (string "->")
              b <- token boolean
              return (Implies (strToBool a) b)
       ||| do a <- token bool_exp
-             string "->"
+             token (string "->")
              b <- token bool_exp
              return (Implies a b)
       ||| do a <- token bool_literal
-             string "&&"
+             token (string "&&")
              b <- token boolean
              return (And (strToBool a) b)
       ||| do a <- token bool_exp
-             string "&&"
+             token (string "&&")
              b <- token bool_exp
              return (And a b)
       ||| do b <- token bool_exp
              return (b)
       
 while :: Parser (Expr, [Command])
-while = do token (char '?')
+while = do char '?'
            cond <- token boolean
-           token (char '?')
+           char '?'
            token (string "<<")
            body <- many pCommand
            token (string ">>")
