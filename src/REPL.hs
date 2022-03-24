@@ -62,7 +62,8 @@ process st (Repeat n commands)
 process st (While c body)
      | removeJust (removeMaybe (eval (st) c)) == BoolVal False = return st
      | otherwise = do st' <- processMultipleCommands st body
-                      return st'
+                      st'' <- process st' (While c body)
+                      return st''
      
      
      {-| length body == 1 = do st' <- liftIO $ (process st (body!!0))

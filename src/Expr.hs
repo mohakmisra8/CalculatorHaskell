@@ -75,6 +75,10 @@ eval vars (ToString x) = Right $ Just (StrVal (show x))
 eval vars (And a b) = Right $ Just (BoolVal (getBool vars a && getBool vars b)) -- implemented by DEEPANKUR 
 eval vars (Or a b) = Right $ Just (BoolVal (getBool vars a || getBool vars b)) -- implemented by DEEPANKUR 
 eval vars (Implies a b) = Right $ Just (BoolVal (getBool vars (And (Not a) b))) -- implemented by DEEPANKUR 
+eval vars (Less x y) = Right $ Just (BoolVal (getVal vars x < getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Greater x y) = Right $ Just (BoolVal (getVal vars x > getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Same x y) = Right $ Just (BoolVal (getVal vars x == getVal vars y)) -- implemented by DEEPANKUR
+eval vars (Not b) = Right $ Just (BoolVal (False && getBool vars b)) -- implemented by DEEPANKUR 
 
 getBool :: Map Name Lit -> Expr -> Bool
 getBool vars (Bool b) = b
