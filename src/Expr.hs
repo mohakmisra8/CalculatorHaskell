@@ -81,7 +81,7 @@ getBool vars (Bool b) = b
 getBool vars expr = toBool vars (eval vars expr)
 
 findVar :: Map Name Lit -> Name -> Lit --find index
-findVar stack n = IntVal $ findIndex n stack
+findVar stack n = removeJust (Data.Map.lookup n stack)
 
 intDiv :: Map Name Lit -> Expr -> Expr -> Int
 intDiv vars a b = div (getVal vars a) (getVal vars b)

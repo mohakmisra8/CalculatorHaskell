@@ -47,7 +47,8 @@ process st (Set var e)
 
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (st) e))
+     = do putStrLn $ litToString (removeJust $ removeMaybe (eval st e))
+          
           -- Print the result of evaluation
           return st
 process st (Repeat n commands)
