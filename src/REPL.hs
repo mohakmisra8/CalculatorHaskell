@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -XFlexibleContexts, -XUndecidableInstances #-}
-
 module REPL where
 
 import Expr
