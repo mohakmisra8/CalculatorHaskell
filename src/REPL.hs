@@ -15,6 +15,12 @@ data LState = LState { vars :: [(Name, Lit)] }
 initLState :: Map Name Lit
 initLState = Map.empty
 
+data FuncSig = FuncID Name [Expr]
+data FuncBody = FuncData Type [Command]
+
+funcList :: Map FuncSig FuncBody
+funcList = Map.empty
+
 -- Given a variable name and a value, return a new set of variables with
 -- that name and value added.
 -- If it already exists, remove the old value
@@ -64,6 +70,12 @@ process st (While c body)
      | otherwise = do st' <- processMultipleCommands st body
                       st'' <- process st' (While c body)
                       return st''
+
+process st (Def ret_type name args body)
+     = if Map.member (FuncID name args) funcList then
+          error "Duplicate function definition attempted"
+       else 
+            Map.insert (FuncID name args) (FuncData ret_type body) (funcList)      
      
      
      {-| length body == 1 = do st' <- liftIO $ (process st (body!!0))

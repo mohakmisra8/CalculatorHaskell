@@ -165,11 +165,14 @@ comparator                      :: Parser String
 comparator                       =  string ">=" ||| string "<=" ||| string "==" ||| string ">" ||| string "<" ||| string "~="
 
 
-
+type_decl :: Parser String
+type_decl = do char ':'
+               typ <- (string "Int" ||| string "Str" ||| string "Bool" ||| string "Void")
+               return (typ)
                             
 
 isBool :: String -> Bool
-isBool s = elem s ["F", "T", "true", "false", "True", "False", "0", "1"]
+isBool s = elem s ["$F", "$T", "$true", "$false", "$True", "$False", "$0", "$1"]
 
 isPlusMinus :: Char -> Bool
 isPlusMinus c = elem c ['+', '-']
@@ -214,6 +217,9 @@ ident                         :: Parser String
 ident                         =  do x  <- letter
                                     xs <- many alphanum
                                     return (x:xs)
+
+andSym :: Parser String
+andSym = string "&&"
 
 identnum                         :: Parser String
 identnum                         =  do x  <- alphanum
