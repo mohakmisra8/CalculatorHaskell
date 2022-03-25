@@ -1,4 +1,12 @@
-module REPL where
+module REPL (
+     FuncSig(FuncID),
+     FuncBody(FuncData),
+     replForFiles,
+     initLState,
+     haskelineSettings,
+     repl,
+     LState
+) where
 
 import Expr
 import Parsing
@@ -10,15 +18,15 @@ import Data.Map
 import qualified Data.Map as Map
 import Data.List
 
-data LState = LState { vars :: [(Name, Lit)] }
-
-initLState :: (Map Name Lit, Map FuncSig FuncBody)
-initLState = (Map.empty, Map.empty)
+type LState = (Map Name Lit, Map FuncSig FuncBody)
 
 data FuncSig = FuncID Name [Expr]
   deriving (Eq, Ord)
  --deriving instance Ord k => Ord (FuncSig)
 data FuncBody = FuncData Type [Command]
+
+initLState :: (Map Name Lit, Map FuncSig FuncBody)
+initLState = (Map.empty, Map.empty)
 
 funcList :: Map FuncSig FuncBody
 funcList = Map.empty
