@@ -18,7 +18,8 @@ initLState :: (Map Name Lit, Map FuncSig FuncBody)
 initLState = (Map.empty, Map.empty)
 
 data FuncSig = FuncID Name [Expr]
- deriving instance Ord k => Ord (FuncSig)
+  deriving (Eq, Ord)
+ --deriving instance Ord k => Ord (FuncSig)
 data FuncBody = FuncData Type [Command]
 
 funcList :: Map FuncSig FuncBody

@@ -39,7 +39,7 @@ data Expr = Add Expr Expr
           | Less Expr Expr
           | Greater Expr Expr
           | Not Expr
-  deriving Show
+  deriving (Show, Eq, Ord)
 
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
@@ -51,7 +51,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
   deriving Show
 
 data Lit = IntVal Int | StrVal String | BoolVal Bool
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data Error
        = UnknownOperationError Char
