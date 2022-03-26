@@ -1,4 +1,12 @@
-module REPL where
+module REPL (
+     FuncSig(FuncID),
+     FuncBody(FuncData),
+     replForFiles,
+     initLState,
+     haskelineSettings,
+     repl,
+     LState
+) where
 
 import Expr
 import Parsing
@@ -10,10 +18,18 @@ import Data.Map
 import qualified Data.Map as Map
 import Data.List
 
-data LState = LState { vars :: [(Name, Lit)] }
+type LState = (Map Name Lit, Map FuncSig FuncBody)
 
-initLState :: Map Name Lit
-initLState = Map.empty
+data FuncSig = FuncID Name [Expr]
+  deriving (Eq, Ord)
+ --deriving instance Ord k => Ord (FuncSig)
+data FuncBody = FuncData Type [Command]
+
+initLState :: (Map Name Lit, Map FuncSig FuncBody)
+initLState = (Map.empty, Map.empty)
+
+funcList :: Map FuncSig FuncBody
+funcList = Map.empty
 
 -- Given a variable name and a value, return a new set of variables with
 -- that name and value added.
@@ -30,16 +46,16 @@ updateVars n i vars =if Map.member n vars then
 --dropVar :: Name -> [(Name, Lit)] -> [(Name, Lit)]
 --dropVar n = filter (\x -> fst x /= n)
 
-process :: Map Name Lit -> Command -> IO (Map Name Lit)
+process :: (Map Name Lit, Map FuncSig FuncBody) -> Command -> IO (Map Name Lit, Map FuncSig FuncBody)
 process st (Set var e)
      = do
-          if isLeft (eval (st) e)
+          if isLeft (eval (fst st) e)
                --handle error
                then do putStrLn "handle this error"
                        return st
           else do
-               let lit = removeJust (removeMaybe (eval (st) e))
-               let st' = updateVars var lit (st)
+               let lit = removeJust (removeMaybe (eval (fst st) e))
+               let st' = (updateVars var lit (fst st), snd st)
                return st'
           -- we need to process the expression here before adding the result to the state
 
@@ -47,10 +63,11 @@ process st (Set var e)
 
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ litToString (removeJust $ removeMaybe (eval st e))
-          
+     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (fst st) e))
+
           -- Print the result of evaluation
           return st
+
 process st (Repeat n commands)
      | n < 1     = return st
      | n == 1    = do st' <- processMultipleCommands st commands
@@ -60,19 +77,27 @@ process st (Repeat n commands)
                       return st''
 
 process st (While c body)
-     | removeJust (removeMaybe (eval (st) c)) == BoolVal False = return st
+     | removeJust (removeMaybe (eval (fst st) c)) == BoolVal False = return st
      | otherwise = do st' <- processMultipleCommands st body
                       st'' <- process st' (While c body)
                       return st''
-     
-     
+
+process st (Def ret_type name args body)
+     = if Map.member (FuncID name args) (snd st) then
+          error "Duplicate function definition attempted"
+       else
+          do let st' = Map.insert (FuncID name args) (FuncData ret_type body) (snd st)
+             let st'' = (fst st, st')
+             return st''
+
+
      {-| length body == 1 = do st' <- liftIO $ (process st (body!!0))
                              return st'
      | otherwise = do st' <- liftIO $ (process st (body!!0))
                       st'' <- liftIO $ (process st' (While c (Data.List.drop 1 body)))
                       return st''-}
 
-processMultipleCommands :: Map Name Lit -> [Command] -> IO (Map Name Lit)
+processMultipleCommands :: (Map Name Lit, Map FuncSig FuncBody) -> [Command] -> IO (Map Name Lit, Map FuncSig FuncBody)
 processMultipleCommands st commands | length commands <= 1 = do st' <- process st (head commands)
                                                                 return st'
                                     | otherwise            = do st' <- process st (head commands)
@@ -84,7 +109,7 @@ processMultipleCommands st commands | length commands <= 1 = do st' <- process s
 -- 'process' to process the command.
 -- 'process' will call 'repl' when done, so the system loops.
 
-repl :: InputT (StateT (Map Name Lit) IO) ()
+repl :: InputT (StateT (Map Name Lit, Map FuncSig FuncBody) IO) ()
 repl = do maybeInput <- getInputLine "> "
           case maybeInput of
                Nothing     -> return ()
@@ -118,19 +143,19 @@ repl = do maybeInput <- getInputLine "> "
 
                           ---move all of this to safety file and test a little bit the other bit
 
-haskelineSettings :: Settings (StateT (Map Name Lit) IO)
+haskelineSettings :: Settings (StateT (Map Name Lit, Map FuncSig FuncBody) IO)
 --maybe change completeWord to completeWordWithPrev need to work out difference
 --can save history to a file, should we??
 haskelineSettings = Settings {complete = completion,
                               autoAddHistory = True,
                               historyFile = Nothing}
 
-completion :: CompletionFunc (StateT (Map Name Lit) IO)
+completion :: CompletionFunc (StateT (Map Name Lit, Map FuncSig FuncBody) IO)
 completion = completeWord Nothing " \t" tabCompletion
 
-tabCompletion :: String -> StateT (Map Name Lit) IO [Completion]
+tabCompletion :: String -> StateT (Map Name Lit, Map FuncSig FuncBody) IO [Completion]
 tabCompletion str = do st <- get
-                       pure $ fmap (\s -> Completion s s True) $ Prelude.filter (str `isPrefixOf`) (((keys st)) ++ ["quit"])
+                       pure $ fmap (\s -> Completion s s True) $ Prelude.filter (str `isPrefixOf`) (keys (fst st) ++ ["quit"])
 
 --searchHistory :: String -> [Completion]
 --searchHistory str = map simpleCompletion $ filter (str `isPrefixOf`) ()
@@ -144,14 +169,14 @@ tabCompletion str = do st <- get
 
 
 --file stuff
-replForFiles :: Map Name Lit -> String -> IO()
+replForFiles :: (Map Name Lit, Map FuncSig FuncBody) -> String -> IO()
 replForFiles st filepath = do commands <- getLinesFromFile filepath
                               runStateT (replMultipleCommands commands) st
                               return ()
 
 
 
-replMultipleCommands :: [String] -> StateT (Map Name Lit) IO ()
+replMultipleCommands :: [String] -> StateT (Map Name Lit, Map FuncSig FuncBody) IO ()
 replMultipleCommands [] = do liftIO $ putStrLn "Done"
                              return ()
 replMultipleCommands commands = case parse pCommand (head commands) of

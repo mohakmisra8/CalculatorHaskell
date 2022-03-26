@@ -8,6 +8,7 @@ import Data.Map
 import qualified Data.Map as Map
 
 type Name = String
+type Type = String
 
 removeJust :: Maybe a -> a
 removeJust (Just a ) = a
@@ -38,17 +39,19 @@ data Expr = Add Expr Expr
           | Less Expr Expr
           | Greater Expr Expr
           | Not Expr
-  deriving Show
+  deriving (Show, Eq, Ord)
 
 -- These are the REPL commands
 data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
              | While Expr [Command]
              | Repeat Int [Command] -- evaluate an expression and run a series of commands while it is true
+             | Def Type Name [Expr] [Command]
+             | Return Expr
   deriving Show
 
 data Lit = IntVal Int | StrVal String | BoolVal Bool
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data Error
        = UnknownOperationError Char
@@ -140,8 +143,8 @@ ass                         =  do n <- token ident
                                        return (a, b)
 
 strToBool :: String -> Expr
-strToBool s | elem s ["T", "true", "True", "1"] = Bool True
-            | elem s ["F", "false", "False", "0"] = Bool False
+strToBool s | elem s ["$T", "$true", "$True", "$1"] = Bool True
+            | elem s ["$F", "$false", "$False", "$0"] = Bool False
 
 algebra                         :: Parser (Expr)
 algebra                         =     do a <- token clause
@@ -191,31 +194,76 @@ ass_bool                         =  do a <- token ident
                                        b <- token boolean
                                        return (a, b)
 
+ass_func :: Parser (String, String, [Expr], [Command])
+ass_func = do  ret_type <- token type_decl
+               func <- token ident
+               args <- token tuple  
+               char '='
+               token (string "{")
+               body <- many pCommand
+               token (string "}")
+               return (ret_type, func, args, body)
+
+comma_seq :: Parser [Expr]
+comma_seq = do s1 <- token ident
+               string ","
+               s2 <- token ident
+               return [Var s1, Var s2]
+         ||| do s <- token ident
+                return [Var s]
+
+multi_comma_seq :: Parser [Expr]
+multi_comma_seq = do s1 <- token comma_seq
+                     string ","
+                     s2 <- token comma_seq
+                     return (s1 ++ s2)
+                ||| do s <- token comma_seq
+                       return s
+
+tuple :: Parser [Expr]
+tuple = do token (char '(')
+           vals <- multi_comma_seq
+           token (char ')')
+           return vals
+           
+
 boolean :: Parser Expr
-boolean = do a <- token bool_literal
-             token (string "||")
-             b <- token boolean
-             return (Or (strToBool a) b)
-      ||| do a <- token bool_exp
+boolean = do a <- token bool_exp
              token (string "||")
              b <- token bool_exp
              return (Or a b)
-      ||| do a <- token bool_literal
-             token (string "->")
-             b <- token boolean
-             return (Implies (strToBool a) b)
       ||| do a <- token bool_exp
              token (string "->")
              b <- token bool_exp
              return (Implies a b)
-      ||| do a <- token bool_literal
-             token (string "&&")
-             b <- token boolean
-             return (And (strToBool a) b)
       ||| do a <- token bool_exp
              token (string "&&")
              b <- token bool_exp
              return (And a b)
+      ||| do a <- token bool_literal
+             token (string "||")
+             b <- token boolean
+             return (Or (strToBool a) b)
+      ||| do a <- token bool_literal
+             token (string "->")
+             b <- token boolean
+             return (Implies (strToBool a) b)
+      ||| do a <- token bool_literal
+             token (string "&&")
+             b <- token boolean
+             return (And (strToBool a) b)
+      ||| do a <- token bool_literal
+             token (string "||")
+             b <- token bool_literal
+             return (Or (strToBool a) (strToBool b))
+      ||| do a <- token bool_literal
+             token (string "->")
+             b <- token bool_literal
+             return (Implies (strToBool a) (strToBool b))
+      ||| do a <- token bool_literal
+             token (string "&&")
+             b <- token bool_literal
+             return (And (strToBool a) (strToBool b))
       ||| do b <- token bool_exp
              return (b)
 
@@ -229,7 +277,7 @@ while = do char '?'
            return (cond, body)
 
 repeat :: Parser Command
-repeat = do token (string "repeat")
+repeat = do token (char '#')
             num <- token int
             space
             char '{'
@@ -307,8 +355,10 @@ value_bool                    =  do name <- token ident
 
 
 pCommand :: Parser Command
-pCommand = do (cond, body) <- while
-              return (While cond body)
+pCommand = do (ret_type, name, args, body) <- ass_func
+              return (Def ret_type name args body)
+           ||| do (cond, body) <- while
+                  return (While cond body)
         |||do (t, content) <- ass
               return (Set t content)
         |||do command <- Expr.repeat

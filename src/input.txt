@@ -1,4 +1,4 @@
 x = 5
 y = "String"
+# 20 {print x x = x+1}
 print y
-print x
