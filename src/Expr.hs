@@ -80,25 +80,25 @@ eval vars (Greater x y) = Right $ Just (BoolVal (getVal vars x > getVal vars y))
 eval vars (Same x y) = Right $ Just (BoolVal (getVal vars x == getVal vars y)) -- implemented by DEEPANKUR
 eval vars (Not b) = Right $ Just (BoolVal (False && getBool vars b)) -- implemented by DEEPANKUR 
 
-getBool :: Map Name Lit -> Expr -> Bool
+getBool :: Map Name Lit -> Expr -> Bool--implemented by Mohak 
 getBool vars (Bool b) = b
 getBool vars expr = toBool vars (eval vars expr)
 
-findVar :: Map Name Lit -> Name -> Lit --find index
+findVar :: Map Name Lit -> Name -> Lit --find index implemented by Mohak 
 findVar stack n = removeJust (Data.Map.lookup n stack)
 
-intDiv :: Map Name Lit -> Expr -> Expr -> Int
+intDiv :: Map Name Lit -> Expr -> Expr -> Int --implemented by Mohak 
 intDiv vars a b = div (getVal vars a) (getVal vars b)
 
-getVal :: Map Name Lit -> Expr -> Int
+getVal :: Map Name Lit -> Expr -> Int--implemented by Mohak 
 getVal vars (Val a) = a
 getVal vars expr = toInt vars (eval vars expr)
 
-toInt :: Map Name Lit -> Either Error (Maybe Lit) -> Int
+toInt :: Map Name Lit -> Either Error (Maybe Lit) -> Int--implemented by Mohak 
 toInt vars result | isLeft result = error "not integer"
                   | otherwise = getVal vars (getExpr (removeJust (removeMaybe result)))
 
-toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool
+toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool--implemented by Mohak 
 toBool vars result | isLeft result = error "not boolean"
                   | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
 
