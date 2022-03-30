@@ -26,6 +26,7 @@ data Expr = Add Expr Expr
           | ToString Expr
           | Var Name
           | Val Int
+          | FVal Float
           | Str String
           | Bool Bool
           | Lit Lit
@@ -39,6 +40,19 @@ data Expr = Add Expr Expr
           | Less Expr Expr
           | Greater Expr Expr
           | Not Expr
+          | Sin Expr 
+          | Cos Expr 
+          | Tan Expr 
+          | Arcsin Expr 
+          | Arccos Expr 
+          | Arctan Expr 
+          | Sinh Expr 
+          | Cosh Expr 
+          | Tanh Expr 
+          | Arcsinh Expr 
+          | Arccosh Expr 
+          | Arctanh Expr 
+          | Exp Expr 
   deriving (Show, Eq, Ord)
 
 -- These are the REPL commands
@@ -50,7 +64,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | Return Expr
   deriving Show
 
-data Lit = IntVal Int | StrVal String | BoolVal Bool
+data Lit = IntVal Int | StrVal String | BoolVal Bool | FloatVal Float 
   deriving (Show, Eq, Ord)
 
 data Error
@@ -82,6 +96,18 @@ eval vars (Less x y) = Right $ Just (BoolVal (getVal vars x < getVal vars y)) --
 eval vars (Greater x y) = Right $ Just (BoolVal (getVal vars x > getVal vars y)) -- implemented by DEEPANKUR
 eval vars (Same x y) = Right $ Just (BoolVal (getVal vars x == getVal vars y)) -- implemented by DEEPANKUR
 eval vars (Not b) = Right $ Just (BoolVal (False && getBool vars b)) -- implemented by DEEPANKUR 
+eval vars (Sin x) = Right $ Just (FloatVal (sin (getFloatVal vars x)))
+eval vars (Cos x) = Right $ Just (FloatVal (cos (getFloatVal vars x)))
+eval vars (Tan x) = Right $ Just (FloatVal (tan (getFloatVal vars x)))
+eval vars (Arcsin x) = Right $ Just (FloatVal (asin (getFloatVal vars x)))
+eval vars (Arccos x) = Right $ Just (FloatVal (acos (getFloatVal vars x)))
+eval vars (Arctan x) = Right $ Just (FloatVal (atan (getFloatVal vars x)))
+eval vars (Sinh x) = Right $ Just (FloatVal (sinh (getFloatVal vars x)))
+eval vars (Cosh x) = Right $ Just (FloatVal (cosh (getFloatVal vars x)))
+eval vars (Tanh x) = Right $ Just (FloatVal (tanh (getFloatVal vars x)))
+eval vars (Arcsinh x) = Right $ Just (FloatVal (asinh (getFloatVal vars x)))
+eval vars (Arccosh x) = Right $ Just (FloatVal (acosh (getFloatVal vars x)))
+eval vars (Arctanh x) = Right $ Just (FloatVal (atanh (getFloatVal vars x)))
 
 getBool :: Map Name Lit -> Expr -> Bool--implemented by Mohak 
 getBool vars (Bool b) = b
@@ -93,13 +119,22 @@ findVar stack n = removeJust (Data.Map.lookup n stack)
 intDiv :: Map Name Lit -> Expr -> Expr -> Int --implemented by Mohak 
 intDiv vars a b = div (getVal vars a) (getVal vars b)
 
+getFloatVal :: Map Name Lit -> Expr -> Float--implemented by Mohak 
+getFloatVal vars (FVal a) = a
+getFloatVal vars expr = toFloat vars (eval vars expr)
+
 getVal :: Map Name Lit -> Expr -> Int--implemented by Mohak 
 getVal vars (Val a) = a
 getVal vars expr = toInt vars (eval vars expr)
 
+
 toInt :: Map Name Lit -> Either Error (Maybe Lit) -> Int--implemented by Mohak 
 toInt vars result | isLeft result = error "not integer"
                   | otherwise = getVal vars (getExpr (removeJust (removeMaybe result)))
+
+toFloat :: Map Name Lit -> Either Error (Maybe Lit) -> Float--implemented by Mohak 
+toFloat vars result | isLeft result = error "not integer"
+                  | otherwise = getFloatVal vars (getExpr (removeJust (removeMaybe result)))
 
 toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool--implemented by Mohak 
 toBool vars result | isLeft result = error "not boolean"
