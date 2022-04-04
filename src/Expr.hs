@@ -63,6 +63,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | While Expr [Command]
              | Repeat Int [Command] -- evaluate an expression and run a series of commands while it is true
              | Def Type Name [Expr] [Command]
+             | Call Name [Expr]
              | Return Expr
   deriving Show
 
@@ -570,11 +571,31 @@ multi_comma_seq = do s1 <- token comma_seq
                 ||| do s <- token comma_seq
                        return s
 
+multi_algebra3orText :: Parser [Expr]
+multi_algebra3orText = do a <- token multiAlgebra3OrText
+                          char ','
+                          b <- token multiAlgebra3OrText
+                          return (a ++ b)
+                         ||| do a <- token multiAlgebra3OrText
+                                return a
+
+multiAlgebra3OrText :: Parser [Expr]
+multiAlgebra3OrText = do a <- token algebra3orText
+                         char ','
+                         b <- token algebra3orText
+                         return [a, b]
+                         ||| do a <- token algebra3orText
+                                return [a]
+
 tuple :: Parser [Expr]
 tuple = do token (char '(')
            vals <- multi_comma_seq
            token (char ')')
            return vals
+           ||| do token $ char '('
+                  vals <- multi_algebra3orText
+                  token $ char ')'
+                  return vals
            
 boolean2 :: Parser Expr
 boolean2 = do a <- token bool
@@ -744,8 +765,12 @@ pTerm = do f <- pFactor
 
 
 pCommand2 :: Parser Command
-pCommand2 = do (cond, body) <- while
-               return (While cond body)
+pCommand2 = do (ret_type, name, args, body) <- ass_func
+               return (Def ret_type name args body)
+              ||| do (name, vars) <- call_func
+                     return (Call name vars)
+              ||| do (cond, body) <- while
+                     return (While cond body)
               ||| do command <- Expr.repeat
                      return command
               ||| do (t, content) <- ass
@@ -763,4 +788,8 @@ pCommand2 = do (cond, body) <- while
                      out <- token ident
                      return (Print (Var out))
 
---while doesnt work fully for ?variable? ?$True? ?var || var && var?
+call_func :: Parser (Name, [Expr])
+call_func = do char ':'
+               n <- token ident
+               a <- token tuple
+               return (n, a)
