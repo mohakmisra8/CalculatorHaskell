@@ -165,8 +165,26 @@ pow                      =  sat isPow
 fac                      :: Parser Char
 fac                      =  sat isFac
 
-bool_literal                      :: Parser String
-bool_literal                      =  bigsat isBool
+--bool_literal                      :: Parser String
+--bool_literal                      =  bigsat isBool
+
+bool_literal :: Parser Bool
+bool_literal = do string "$T"
+                  return True
+                  ||| do string "$true"
+                         return True
+                  ||| do string "$True"
+                         return True
+                  ||| do string "$1"
+                         return True
+                  ||| do string "$F"
+                         return False
+                  ||| do string "$false"
+                         return False
+                  ||| do string "$False"
+                         return False
+                  ||| do string "$0"
+                         return False
 
 comparator                      :: Parser String
 comparator                       =  string ">=" ||| string "<=" ||| string "==" ||| string ">" ||| string "<" ||| string "~="

@@ -6,6 +6,7 @@ import Data.Either
 import Data.Text (splitOn)
 import Data.Map
 import qualified Data.Map as Map
+import System.Directory (setAccessTime)
 
 type Name = String
 type Type = String
@@ -83,45 +84,51 @@ eval vars (Str s) = Right (Just (StrVal s)) -- for values, just give the value d
 eval vars (FVal f)= Right (Just (FloatVal f))
 eval vars (Bool b) = Right (Just (BoolVal b)) -- for values, just give the value directly
 eval vars (Var n) = Right $ Just (findVar vars n) -- look-up actual value of variable
-eval vars (Add (Val x) (Val y)) = Right $ Just (IntVal (getVal vars (Val x) + getVal vars (Val y)))
-eval vars (Add (Var x) (Val y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) + getVal vars (Val y))) 
-                                | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) + getFloatVal vars (Val y)))
-eval vars (Add (Val y) (Var x)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) + getVal vars (Val y))) 
-                                | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) + getFloatVal vars (Val y))) 
-eval vars (Add (Var x) (Var y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) && isIntLit (removeJust $ removeMaybe $ (eval vars (Var y))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) + getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-                                | otherwise                                                                                                              = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) + getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-eval vars (Add (FVal x) (Val y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) + getFloatVal vars (Val y))) -- implemented by DEEPANKUR
-eval vars (Add (Val x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (Val x) + getFloatVal vars (FVal y)))
-eval vars (Add (FVal x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) + getFloatVal vars (FVal y)))
-eval vars (Add _ _) = Left $ error "cannot perform mathematical operations on a non number"
---error for not numbers
-eval vars (Sub (Val x) (Val y)) = Right $ Just (IntVal (getVal vars (Val x) - getVal vars (Val y))) -- implemented by DEEPANKUR
-eval vars (Sub (Var x) (Val y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) - getVal vars (Val y))) 
-                                | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) - getFloatVal vars (Val y)))
-eval vars (Sub (Val y) (Var x)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (getVal vars (Val y) - (toInt vars (removeJust $ removeMaybe (eval vars (Var x)))))))) 
-                                | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (Val y) - (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x)))))))) 
-eval vars (Sub (Var x) (Var y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) && isIntLit (removeJust $ removeMaybe $ (eval vars (Var y))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) - getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-                                | otherwise                                                                                                              = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) - getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-eval vars (Sub (FVal x) (Val y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) - getFloatVal vars (Val y))) -- implemented by DEEPANKUR
-eval vars (Sub (Val x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (Val x) - getFloatVal vars (FVal y)))
-eval vars (Sub (FVal x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) - getFloatVal vars (FVal y)))
-eval vars (Sub _ _) = Left $ error "cannot perform mathematical operations on a non number"
---error for not numbers
-eval vars (Div x (Val 0)) = Right (Just (IntVal 0))
-eval vars (Div x (FVal 0)) = Right (Just (IntVal 0))
-eval vars (Div x y) = Right $ Just (FloatVal ((getFloatVal vars x)/(getFloatVal vars y))) -- implemented by DEEPANKUR
---error for not numbers
-eval vars (Mult (Val x) (Val y)) = Right $ Just (IntVal (getVal vars (Val x) * getVal vars (Val y)))
-eval vars (Mult (Var x) (Val y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) * getVal vars (Val y))) 
-                                 | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) * getFloatVal vars (Val y)))
-eval vars (Mult (Val y) (Var x)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) = Right $ Just (IntVal (getVal vars (Val (getVal vars (Val y) * (toInt vars (removeJust $ removeMaybe (eval vars (Var x)))))))) 
-                                 | otherwise                                                 = Right $ Just (FloatVal (getFloatVal vars (Val y) * (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x)))))))) 
-eval vars (Mult (Var x) (Var y)) | isIntLit (removeJust $ removeMaybe $ (eval vars (Var x))) && isIntLit (removeJust $ removeMaybe $ (eval vars (Var y))) = Right $ Just (IntVal (getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var x))))) * getVal vars (Val (toInt vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-                                 | otherwise                                                                                                              = Right $ Just (FloatVal (getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var x))))) * getFloatVal vars (FVal (toFloat vars (removeJust $ removeMaybe (eval vars (Var y))))))) 
-eval vars (Mult (FVal x) (Val y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) * getFloatVal vars (Val y))) -- implemented by DEEPANKUR
-eval vars (Mult (Val x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (Val x) * getFloatVal vars (FVal y)))
-eval vars (Mult (FVal x) (FVal y)) = Right $ Just (FloatVal (getFloatVal vars (FVal x) * getFloatVal vars (FVal y)))
-eval vars (Mult _ _) = Left $ error "cannot perform mathematical operations on a non number"
+
+eval vars (Add x y) = case getExprType vars x of
+                                "Val" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (IntVal (getVal vars x + getVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+                                "FVal" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+
+eval vars (Sub x y) = case getExprType vars x of
+                                "Val" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (IntVal (getVal vars x - getVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x - getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+                                "FVal" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (FloatVal (getFloatVal vars x - getFloatVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x - getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+
+eval vars (Mult x y) = case getExprType vars x of
+                                "Val" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (IntVal (getVal vars x * getVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x * getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+                                "FVal" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (FloatVal (getFloatVal vars x * getFloatVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x * getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+
+eval vars (Div x (Val 0)) = Left $ error "cannot divide by 0"
+eval vars (Div x (FVal 0.0)) = Left $ error "cannot divide by 0"
+eval vars (Div x y) = case getExprType vars x of
+                                "Val" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (FloatVal (getFloatVal vars x / getFloatVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x / getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+                                "FVal" -> case getExprType vars y of
+                                                     "Val"     -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
+                                                     "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
+                                                     otherwise -> Left $ error "cannot perform mathematical operations on a non number"
+
+
+
 --error for not numbers
 --(-1) ** 0.5 doesnt work but (-1) ** 2 works
 -- ** same as ^ but for floats
@@ -129,21 +136,20 @@ eval vars (Pow x y) | getFloatVal vars x < 0 && (not $ isInt (getFloatVal vars y
                     | getFloatVal vars y > 0  = Right $ Just (FloatVal (getFloatVal vars x ** getFloatVal vars y))
                     | getFloatVal vars x == 0 = Right (Just (IntVal 0))
                     | otherwise               = Right (Just (FloatVal $ 1/(getFloatVal vars x ** (abs $ getFloatVal vars y))))-- implemented by DEEPANKUR
+eval vars (Fac x) | getExprType vars x == "Val" = Right (Just $ IntVal (factorial vars x))
+                  | otherwise                   = Left $ error "cannot apply factorial to a non int value"
 
-eval vars (Fac (Val x)) | x >= 0    = Right $ Just (IntVal (factorial vars (Val x)))
-                        | otherwise = Right (Just (IntVal 0))
-eval vars (Mod (Val x) (Val 0)) = Right $ Just (IntVal 0)
-eval vars (Mod (Val x) (Val y)) = Right $ Just (IntVal ( mod (getVal vars (Val x)) (getVal vars (Val y)) ))--MOHAK
-eval vars (Mod _ _) = Right (Just (IntVal 0))
+eval vars (Mod x y) | getExprType vars x == "Val" && getExprType vars y == "Val" && getVal vars y /= 0 = Right (Just $ IntVal $ mod (getVal vars x) (getVal vars y))
+                    | otherwise                                                                        = Left $ error "can only perform the mudulus function on ints"
 eval vars (ToString (Val x)) = Right $ Just (StrVal (show x))
 eval vars (ToString (FVal x)) = Right $ Just (StrVal (show x))
 eval vars (ToString (Bool x)) = Right $ Just (StrVal (show x))
-eval vars (And (Bool a) (Bool b)) = Right $ Just (BoolVal (getBool vars (Bool a) && getBool vars (Bool b))) -- implemented by DEEPANKUR
-eval vars (And a b) = Left $ error "Cannot perform boolean comparisons on non boolean variables"
-eval vars (Or (Bool a) (Bool b)) = Right $ Just (BoolVal (getBool vars (Bool a) || getBool vars (Bool b))) -- implemented by DEEPANKUR
-eval vars (Or a b) = Left $ error "Cannot perform boolean comparisons on non boolean variables"
-eval vars (Implies (Bool a) (Bool b)) = Right $ Just (BoolVal (not a || b)) -- implemented by DEEPANKUR 
-eval vars (Implies a b) = Left $ error "Cannot perform boolean comparisons on non boolean variables"
+eval vars (And a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (getBool vars a && getBool vars b))
+                    | otherwise                                                    = Left $ error "Cannot perform boolean comparisons on non boolean variables"
+eval vars (Or a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (getBool vars a || getBool vars b))
+                   | otherwise                                                    = Left $ error "Cannot perform boolean comparisons on non boolean variables"
+eval vars (Implies a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (not (getBool vars a) || getBool vars b))
+                        | otherwise                                                    = Left $ error "Cannot perform boolean comparisons on non boolean variables"
 
 
 eval vars (Less x y) = case getExprType vars y of
@@ -207,9 +213,10 @@ eval vars (Same x y) = case getExprType vars y of
 --eval vars (Same _ _) = Left $ error "cannot perform comparison between two different types"
 
 
-eval vars (Not (Bool b)) = Right $ Just (BoolVal (not b)) -- implemented by DEEPANKUR
-eval vars (Not a) | (getExprType vars a) == "Bool" = Right $ Just (BoolVal (getBool vars (getExpr (removeJust $ removeMaybe $ eval vars a))))
-                        | otherwise               = Left $ error "Cannot perform boolean comparisons on non boolean variables"
+eval vars (Not a) | (getExprType vars a) == "Bool" = Right $ Just (BoolVal $ not (getBool vars (getExpr (removeJust $ removeMaybe $ eval vars a))))
+                  | otherwise               = Left $ error "Cannot perform boolean comparisons on non boolean variables"
+
+
 eval vars (Sin (FVal x)) = Right $ Just (FloatVal (sin (getFloatVal vars (FVal x))))
 eval vars (Sin (Val x)) = Right $ Just (FloatVal (sin (getFloatVal vars (Val x))))
 eval vars (Sin x) = Left $ error "cannot perform mathematical operations on a non number"
@@ -254,9 +261,9 @@ eval vars (Arctanh (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh
 eval vars (Arctanh (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars (Val x))))
                             | otherwise         = Left $ error "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arctanh x) = Left $ error "cannot perform mathematical operations on a non number"
-eval vars (Abs (FVal a)) = Right $ Just (FloatVal (abs a))
-eval vars (Abs (Val a))  = Right $ Just (IntVal (abs a))
-eval vars (Abs _)        = Left $ error "cannot perform mathematical operations on a non number"
+eval vars (Abs a) | getExprType vars a == "FVal" = Right $ Just (FloatVal (abs (getFloatVal vars a)))
+                  | getExprType vars a == "Val"  = Right $ Just (IntVal (abs (getVal vars a)))
+                  | otherwise                    = Left $ error "cannot perform mathematical operations on a non number"
 
 getExprType :: Map Name Lit -> Expr -> String 
 getExprType vars (Val a)  = "Val"
@@ -290,7 +297,7 @@ getFloatVal vars a  = toFloat vars ((removeJust $ removeMaybe $ eval vars a))
 getVal :: Map Name Lit -> Expr -> Int--implemented by Mohak 
 getVal vars (Val a) = a
 getVal vars (FVal a) = fromInteger (round a)
-getVal vars (Var x) = toInt vars (removeJust $ removeMaybe (eval vars (Var x)))
+getVal vars x = toInt vars (removeJust $ removeMaybe (eval vars x))
 --getVal vars expr = toInt vars (removeJust $ removeMaybe (eval vars (Val x)))
 
 isInt :: Float -> Bool
@@ -440,11 +447,51 @@ algebra2                        = do char '('
                                    ||| do a <- token clause2
                                           return a
 
+trig :: Parser Expr
+trig = do token $ string "asinh"
+          a <- token clause2
+          return (Arcsinh a)
+          ||| do token $ string "acosh"
+                 a <- token clause2
+                 return (Arccosh a)
+          ||| do token $ string "atanh"
+                 a <- token clause2
+                 return (Arctanh a)
+          ||| do token $ string "asin"
+                 a <- token clause2
+                 return (Arcsin a)
+          ||| do token $ string "acos"
+                 a <- token clause2
+                 return (Arccos a)
+          ||| do token $ string "atan"
+                 a <- token clause2
+                 return (Arctan a)
+          ||| do token $ string "sinh"
+                 a <- token clause2
+                 return (Sinh a)
+          ||| do token $ string "cosh"
+                 a <- token clause2
+                 return (Cosh a)
+          ||| do token $ string "tanh"
+                 a <- token clause2
+                 return (Tanh a)
+          ||| do token $ string "sin"
+                 a <- token clause2
+                 return (Sin a)
+          ||| do token $ string "cos"
+                 a <- token clause2
+                 return (Cos a)
+          ||| do token $ string "tan"
+                 a <- token clause2
+                 return (Tan a)
+
+--TODO: add abs and trig functions, maybe slightly fix pow
 algebra3                           :: Parser Expr
-algebra3                           = do char '('
-                                        a <- clause2
-                                        char ')'
-                                        return a
+algebra3                           = do a <- token clause2
+                                        char '!'
+                                        return (Fac a)
+                                     ||| do a <- token trig
+                                            return a
                                      ||| do a <- token clause2
                                             char '^'
                                             b <- token clause2
@@ -457,6 +504,10 @@ algebra3                           = do char '('
                                             char '/'
                                             b <- token clause2
                                             return (Div a b)
+                                     ||| do a <- token clause2
+                                            char '%'
+                                            b <- token clause2
+                                            return (Mod a b)
                                      ||| do a <- token clause2
                                             char '+'
                                             b <- token clause2
@@ -473,6 +524,10 @@ clause2                              = do char '('
                                           a <- algebra3
                                           char ')'
                                           return a
+                                     ||| do char '|'
+                                            a <- algebra3
+                                            char '|'
+                                            return (Abs a)
                                      ||| do a <- token ident
                                             return (Var a)
                                      ||| do a <- token float
@@ -485,7 +540,7 @@ clause2                              = do char '('
 ass_bool                         :: Parser (String, Expr)
 ass_bool                         =  do a <- token ident
                                        char '='
-                                       b <- token boolean
+                                       b <- token boolean2
                                        return (a, b)
 
 ass_func :: Parser (String, String, [Expr], [Command])
@@ -521,50 +576,57 @@ tuple = do token (char '(')
            token (char ')')
            return vals
            
+boolean2 :: Parser Expr
+boolean2 = do a <- token bool
+              string "||"
+              b <- token $ getBools "||"
+              return (Or a b)
+              ||| do a <- token bool
+                     string "&&"
+                     b <- getBools "&&"
+                     return (And a b)
+              ||| do a <- token bool
+                     string "->"
+                     b <- getBools "->"
+                     return (Implies a b)
+              ||| do a <- token bool
+                     return a
 
-boolean :: Parser Expr
-boolean = do a <- token bool_exp
-             token (string "||")
-             b <- token bool_exp
-             return (Or a b)
-      ||| do a <- token bool_exp
-             token (string "->")
-             b <- token bool_exp
-             return (Implies a b)
-      ||| do a <- token bool_exp
-             token (string "&&")
-             b <- token bool_exp
-             return (And a b)
-      ||| do a <- token bool_literal
-             token (string "||")
-             b <- token boolean
-             return (Or (strToBool a) b)
-      ||| do a <- token bool_literal
-             token (string "->")
-             b <- token boolean
-             return (Implies (strToBool a) b)
-      ||| do a <- token bool_literal
-             token (string "&&")
-             b <- token boolean
-             return (And (strToBool a) b)
-      ||| do a <- token bool_literal
-             token (string "||")
-             b <- token bool_literal
-             return (Or (strToBool a) (strToBool b))
-      ||| do a <- token bool_literal
-             token (string "->")
-             b <- token bool_literal
-             return (Implies (strToBool a) (strToBool b))
-      ||| do a <- token bool_literal
-             token (string "&&")
-             b <- token bool_literal
-             return (And (strToBool a) (strToBool b))
-      ||| do b <- token bool_exp
-             return (b)
+bool :: Parser Expr
+bool = do char '('
+          a <- boolean2
+          char ')'
+          return a
+          ||| do char '~'
+                 a <- bool
+                 return (Not a)
+          ||| do a <- token bool_literal 
+                 return (Bool a)
+          ||| do a <- algebra3orText
+                 x <- comparator
+                 b <- algebra3orText
+                 return (dop x a b)
+          ||| do a <- algebra3
+                 return a
+
+algebra3orText :: Parser Expr
+algebra3orText = do a <- multi_str_cat
+                    return (Str a)
+                    ||| do a <- algebra3
+                           return a
+
+getBools :: String -> Parser Expr
+getBools s = do a <- token bool
+                string s
+                b <- getBools s
+                return (Or a b)
+                ||| do a <- token bool
+                       return a
+                
 
 while :: Parser (Expr, [Command])
 while = do char '?'
-           cond <- token boolean
+           cond <- token boolean2
            char '?'
            token (string "<<")
            body <- many pCommand
@@ -579,22 +641,6 @@ repeat = do token (char '#')
             body <- many pCommand
             char '}'
             return (Repeat num body)
-
-
-bool_exp :: Parser Expr
-bool_exp = do char '('
-              b <- token boolean
-              char ')'
-              return (b)
-      ||| do char '~'
-             b <- token boolean
-             return (Not b)
-      ||| do b <- token bool_literal
-             return (strToBool b)
-      ||| do a <- algebra
-             x <- comparator
-             b <- algebra
-             return (dop x a b)
 
 op :: Char -> Expr -> Expr -> Expr
 op '+' a b = Add a b
@@ -641,12 +687,6 @@ value_int                    =  do name <- token ident
                                    return (Var name)
                         ||| do num <- token integer
                                return (Val num)
-
-value_bool                      :: Parser Expr
-value_bool                    =  do name <- token ident
-                                    return (Var name)
-                        ||| do bl <- token bool_literal
-                               return (strToBool bl)
 
 
 pCommand :: Parser Command
@@ -702,3 +742,25 @@ pTerm = do f <- pFactor
                    return (Div t e)
                  ||| return f
 
+
+pCommand2 :: Parser Command
+pCommand2 = do (cond, body) <- while
+               return (While cond body)
+              ||| do command <- Expr.repeat
+                     return command
+              ||| do (t, content) <- ass
+                     return (Set t content)
+              ||| do string "print"
+                     space
+                     out_math <- algebra3
+                     return (Print out_math)
+              ||| do string "print"
+                     space
+                     out_str <- multi_str_cat
+                     return (Print (Str out_str))
+              ||| do string "print"
+                     space
+                     out <- token ident
+                     return (Print (Var out))
+
+--while doesnt work fully for ?variable? ?$True? ?var || var && var?

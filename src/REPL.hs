@@ -122,7 +122,7 @@ repl = do maybeInput <- getInputLine "> "
                --tab completion leaves a space after the completed word
                Just "quit "-> return ()
                Just inp    -> do st <- lift get
-                                 case parse pCommand inp of
+                                 case parse pCommand2 inp of
                                       [(cmd, "")] -> do outputStrLn $ show cmd
                                                         st' <- liftIO $ process st cmd
                                                         --outputStrLn $ show cmd
