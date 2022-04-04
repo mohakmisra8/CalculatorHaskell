@@ -10,9 +10,11 @@ import qualified Data.Map as Map
 type Name = String
 type Type = String
 
+--method to remove just
 removeJust :: Maybe a -> a
 removeJust (Just a ) = a
 
+--method to remove maybe
 removeMaybe :: Either a b -> b
 removeMaybe (Right a) = a
 
@@ -64,15 +66,17 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | Return Expr
   deriving Show
 
+--These are the different types Lit can be
 data Lit = IntVal Int | StrVal String | BoolVal Bool | FloatVal Float 
   deriving (Show, Eq, Ord)
 
+--These are the two types of errors that can occur
 data Error
        = UnknownOperationError Char
        | SingleOperationError Char
        deriving Show
 
-
+--This is used to evaluate the different types of calls and match them with methods.
 eval :: Map Name Lit -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
         --Lit
@@ -109,44 +113,53 @@ eval vars (Arcsinh x) = Right $ Just (FloatVal (asinh (getFloatVal vars x)))
 eval vars (Arccosh x) = Right $ Just (FloatVal (acosh (getFloatVal vars x)))
 eval vars (Arctanh x) = Right $ Just (FloatVal (atanh (getFloatVal vars x)))
 
-getBool :: Map Name Lit -> Expr -> Bool--implemented by Mohak 
+--This method is used to get the boolean values
+getBool :: Map Name Lit -> Expr -> Bool  
 getBool vars (Bool b) = b
 getBool vars expr = toBool vars (eval vars expr)
 
-findVar :: Map Name Lit -> Name -> Lit --find index implemented by Mohak 
+--This method is used to find variables
+findVar :: Map Name Lit -> Name -> Lit 
 findVar stack n = removeJust (Data.Map.lookup n stack)
 
-intDiv :: Map Name Lit -> Expr -> Expr -> Int --implemented by Mohak 
+--This method is used to carry out int division
+intDiv :: Map Name Lit -> Expr -> Expr -> Int 
 intDiv vars a b = div (getVal vars a) (getVal vars b)
 
-getFloatVal :: Map Name Lit -> Expr -> Float--implemented by Mohak 
+--This method is used to get a float values
+getFloatVal :: Map Name Lit -> Expr -> Float
 getFloatVal vars (FVal a) = a
 getFloatVal vars expr = toFloat vars (eval vars expr)
 
+--This method is used to return an int value
 getVal :: Map Name Lit -> Expr -> Int--implemented by Mohak 
 getVal vars (Val a) = a
 getVal vars expr = toInt vars (eval vars expr)
 
-
+--This method is used to convert a Lit to an int
 toInt :: Map Name Lit -> Either Error (Maybe Lit) -> Int--implemented by Mohak 
 toInt vars result | isLeft result = error "not integer"
                   | otherwise = getVal vars (getExpr (removeJust (removeMaybe result)))
 
+--This method is used to convert a Lit to float
 toFloat :: Map Name Lit -> Either Error (Maybe Lit) -> Float--implemented by Mohak 
 toFloat vars result | isLeft result = error "not integer"
                   | otherwise = getFloatVal vars (getExpr (removeJust (removeMaybe result)))
 
+--This method is used to convert a Lit to a bool
 toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool--implemented by Mohak 
 toBool vars result | isLeft result = error "not boolean"
                   | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
 
 
+--This method is used to get a Lit
 getLit :: Expr -> Lit
 getLit (Lit a) = a
 getLit (Val a) = IntVal a
 getLit (Str a) = StrVal a
 getLit _       = IntVal 0
 
+--This method is used to get an Expr
 getExpr :: Lit -> Expr
 getExpr (IntVal a) = Val a
 getExpr (StrVal a) = Str a
@@ -158,9 +171,11 @@ litToString (StrVal a) = a
 litToString (IntVal a) = litToString (StrVal (show a))
 litToString (BoolVal a) = litToString (StrVal (show a))
 
+--This method is used to convert a char to an int
 digitToInt :: Char -> Int
 digitToInt x = fromEnum x - fromEnum '0'
---Mohak
+
+--This method is used to find the factorial for an input expr
 factorial :: Map Name Lit -> Expr -> Int
 factorial _ (Val 0) = 1
 factorial vars n =  getVal vars n * factorial vars (Val (getVal vars n - 1))
@@ -177,6 +192,7 @@ ass                         =  do n <- token ident
                                 ||| do (a, b) <- ass_bool
                                        return (a, b)
 
+--This method is used to convert a string to a boolean
 strToBool :: String -> Expr
 strToBool s | elem s ["$T", "$true", "$True", "$1"] = Bool True
             | elem s ["$F", "$false", "$False", "$0"] = Bool False
@@ -302,6 +318,8 @@ boolean = do a <- token bool_exp
       ||| do b <- token bool_exp
              return (b)
 
+
+--This is used to implememt while loops
 while :: Parser (Expr, [Command])
 while = do char '?'
            cond <- token boolean
@@ -311,6 +329,7 @@ while = do char '?'
            token (string ">>")
            return (cond, body)
 
+--This is used for repeating commands
 repeat :: Parser Command
 repeat = do token (char '#')
             num <- token int
@@ -336,6 +355,7 @@ bool_exp = do char '('
              b <- algebra
              return (dop x a b)
 
+--This is where operations are converted to Expr
 op :: Char -> Expr -> Expr -> Expr
 op '+' a b = Add a b
 op '-' a b = Sub a b
@@ -393,7 +413,7 @@ pCommand :: Parser Command
 pCommand = do (ret_type, name, args, body) <- ass_func
               return (Def ret_type name args body)
            ||| do (cond, body) <- while
-                  return (While cond body)
+                  return (While cond body)--use of while
         |||do (t, content) <- ass
               return (Set t content)
         |||do command <- Expr.repeat
@@ -410,7 +430,8 @@ pCommand = do (ret_type, name, args, body) <- ass_func
                    space
                    out <- token ident
                    return (Print (Var out))
---done by MOHAK
+
+--This is used for addition and subtraction
 pExpr :: Parser Expr
 pExpr = do t <- pTerm
            do char '+'
@@ -419,6 +440,7 @@ pExpr = do t <- pTerm
                    Sub t <$> pExpr
                  ||| return t
 
+--This is used to enclose expressions in brackets
 pFactor :: Parser Expr
 pFactor = do Val . digitToInt <$> digit
            ||| do v <- letter
@@ -429,6 +451,7 @@ pFactor = do Val . digitToInt <$> digit
                        char ')'
                        return e
 
+--This method is used for multiplaction and division
 pTerm :: Parser Expr
 pTerm = do f <- pFactor
            e <- pExpr
