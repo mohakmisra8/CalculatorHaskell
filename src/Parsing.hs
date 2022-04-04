@@ -75,10 +75,17 @@ ass_int                         =  do a <- token ident
                                       b <- token integer
                                       return (a, b)
 
+
 ass_str                         :: Parser (String, String)
 ass_str                         =  do a <- token ident
                                       char '='
                                       b <- token multi_str_cat
+                                      return (a, b)
+
+ass_float                       :: Parser (String, Float)
+ass_float                       =  do a <- token ident
+                                      char '='
+                                      b <- token float
                                       return (a, b)
        
 
@@ -236,6 +243,23 @@ int                           =  do char '-'
                                     return (-n)
                                   ||| nat
 
+flt                         :: Parser Float
+flt                         = do i1 <- int
+                                 char '.'
+                                 i2 <- nat
+                                 char 'e'
+                                 ex <- int
+                                 return $ read ((show i1) ++ "." ++ (show i2) ++ "e" ++ (show ex))::Parser Float
+                               ||| do i1 <- int
+                                      char '.'
+                                      i2 <- nat
+                                      return $ read ((show i1) ++ "." ++ (show i2))::Parser Float
+                               ||| do i <- int
+                                      char 'e'
+                                      ex <- int
+                                      return $ read ((show i) ++ "e" ++ (show ex))::Parser Float
+                                   
+
 space                         :: Parser ()
 space                         =  do many (sat isSpace)
                                     return ()
@@ -259,6 +283,9 @@ natural                       =  token nat
 
 integer                       :: Parser Int
 integer                       =  token int
+
+float                         :: Parser Float
+float                         =  token flt
 
 symbol                        :: String -> Parser String
 symbol xs                     =  token (string xs)
