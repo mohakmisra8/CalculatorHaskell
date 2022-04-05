@@ -26,7 +26,7 @@ main = do putStrLn "Do you want to read code from a file (y/n)"
           --runRepl initLState
 --main = runStateT repl initLState
 
-runRepl :: Map Name Lit -> IO ()
+runRepl :: (Map Name Lit, Map FuncSig FuncBody) -> IO ()
 runRepl st = --do runInputT defaultSettings (runStateT repl initLState)
              do runStateT (runInputT haskelineSettings repl) initLState
                 return ()

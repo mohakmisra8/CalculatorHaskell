@@ -48,7 +48,7 @@ updateVars n i vars =if Map.member n vars then
 
 process :: (Map Name Lit, Map FuncSig FuncBody) -> Command -> IO (Map Name Lit, Map FuncSig FuncBody)
 process st (Set var e)
-     = do
+     = do putStrLn $ show $ eval (fst st) e
           if isLeft (eval (fst st) e)
                --handle error
                then do putStrLn "handle this error"
@@ -63,7 +63,8 @@ process st (Set var e)
 
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (fst st) e))
+     = do putStrLn $ show $ eval (fst st) e
+          putStrLn $ litToString (removeJust $ removeMaybe (eval (fst st) e))
 
           -- Print the result of evaluation
           return st
@@ -111,14 +112,20 @@ processMultipleCommands st commands | length commands <= 1 = do st' <- process s
 
 repl :: InputT (StateT (Map Name Lit, Map FuncSig FuncBody) IO) ()
 repl = do maybeInput <- getInputLine "> "
+          --print out the map
+          st <- lift get
+          liftIO $ print $ toList (fst st)
+
           case maybeInput of
                Nothing     -> return ()
                Just "quit" -> return ()
                --tab completion leaves a space after the completed word
                Just "quit "-> return ()
                Just inp    -> do st <- lift get
-                                 case parse pCommand inp of
-                                      [(cmd, "")] -> do st' <- liftIO $ process st cmd
+                                 case parse pCommand2 inp of
+                                      [(cmd, "")] -> do outputStrLn $ show cmd
+                                                        st' <- liftIO $ process st cmd
+                                                        --outputStrLn $ show cmd
                                                         lift $ put st'
                                                         repl
                                       _           -> do outputStrLn "Parse Error"
