@@ -10,9 +10,12 @@ import System.Directory (setAccessTime)
 
 type Name = String
 
+--removes the Just before the value
 removeJust :: Maybe a -> a
 removeJust (Just a ) = a
 
+--removes the Either to extract teh maybe Lit
+--converts Error to Maybe Lit so that it can be printed out
 removeMaybe :: Either Error (Maybe Lit) -> (Maybe Lit)
 removeMaybe (Right a) = a
 removeMaybe (Left a) = Just (StrVal (show a))
@@ -67,19 +70,18 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | If Expr [Command]
   deriving Show
 
+--variables will be of these types
 data Lit = IntVal Int | StrVal String | BoolVal Bool | FloatVal Float 
   deriving (Show, Eq, Ord)
 
+--most of our error will be returned like this so that the program continues running
 data Error
-       = UnknownOperationError Char
-        | SingleOperationError Char
-        | IncorrectUsageError [Char]
+       = IncorrectUsageError [Char]
        deriving Show
 
-
+--eval method evaluetes the expressions passed in and returns either an error or a Lit value
 eval :: Map Name Lit -> -- Variable name to value mapping
         Expr -> -- Expression to evaluate
-        --Lit
         Either Error (Maybe Lit) -- Result (if no errors such as missing variables)
 eval vars (Val x) = Right (Just (IntVal x)) -- for values, just give the value directly
 eval vars (Str s) = Right (Just (StrVal s)) -- for values, just give the value directly
@@ -87,7 +89,10 @@ eval vars (FVal f)= Right (Just (FloatVal f)) -- for values, just give the value
 eval vars (Bool b) = Right (Just (BoolVal b)) -- for values, just give the value directly
 eval vars (Var n) = Right $ Just (findVar vars n) -- look-up actual value of variable
 
+--adds to values together, or concatenates two strings
+                           --compares based on the type of x when it is evaluated by eval
 eval vars (Add x y) = case getExprType vars x of
+                                 --if it is a "Val" or "FVal" check that y is also a "Val" or "FVal" and add them together
                                 "Val" -> case getExprType vars y of
                                                      "Val"     -> Right $ Just (IntVal (getVal vars x + getVal vars y))
                                                      "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
@@ -96,11 +101,14 @@ eval vars (Add x y) = case getExprType vars x of
                                                      "Val"     -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
                                                      "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x + getFloatVal vars y))
                                                      otherwise -> Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+                                --if it is a string check that y is also a string, and concatenate them
                                 "String" -> case getExprType vars y of
                                                      "String"  -> Right $ Just (StrVal ((getStrVal vars x) ++ (getStrVal vars y)))
                                                      otherwise -> Left $ IncorrectUsageError "cannot concatenate a non string"
+                                -- if x is a boolean return an error
                                 otherwise -> Left $ IncorrectUsageError "Cannot add bolean values"
 
+--subtracts the values, checking the types of x and y as above
 eval vars (Sub x y) = case getExprType vars x of
                                 "Val" -> case getExprType vars y of
                                                      "Val"     -> Right $ Just (IntVal (getVal vars x - getVal vars y))
@@ -111,6 +119,7 @@ eval vars (Sub x y) = case getExprType vars x of
                                                      "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x - getFloatVal vars y))
                                                      otherwise -> Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
+--multiplies the values, checking the types of x and y as above
 eval vars (Mult x y) = case getExprType vars x of
                                 "Val" -> case getExprType vars y of
                                                      "Val"     -> Right $ Just (IntVal (getVal vars x * getVal vars y))
@@ -121,6 +130,7 @@ eval vars (Mult x y) = case getExprType vars x of
                                                      "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x * getFloatVal vars y))
                                                      otherwise -> Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
+--divides the values, checking the types of x and y as above
 eval vars (Div x (Val 0)) = Left $ IncorrectUsageError "cannot divide by 0"
 eval vars (Div x (FVal 0.0)) = Left $ IncorrectUsageError "cannot divide by 0"
 eval vars (Div x y) = case getExprType vars x of
@@ -133,9 +143,10 @@ eval vars (Div x y) = case getExprType vars x of
                                                      "FVal"    -> Right $ Just (FloatVal (getFloatVal vars x / getFloatVal vars y))
                                                      otherwise -> Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-
-
---error for not numbers
+--if x is less than 0 and y is not an integer return 0
+--if y is greater than 0 return x to the power of y
+--if x is 0 return 0
+--return x to the power of y
 --(-1) ** 0.5 doesnt work but (-1) ** 2 works
 -- ** same as ^ but for floats
 eval vars (Pow x y) | getFloatVal vars x < 0 && (not $ isInt (getFloatVal vars y)) = Right (Just (IntVal 0))
@@ -143,24 +154,36 @@ eval vars (Pow x y) | getFloatVal vars x < 0 && (not $ isInt (getFloatVal vars y
                     | getFloatVal vars x == 0 = Right (Just (IntVal 0))
                     | otherwise               = Right (Just (FloatVal $ 1/(getFloatVal vars x ** (abs $ getFloatVal vars y))))
 
+--returns the factorial of x if x is a Val when evaluated and is greater than 0
 eval vars (Fac x) | getExprType vars x == "Val" && toInt vars (removeJust  (removeMaybe  (eval vars x))) >= 0 = Right (Just $ IntVal (factorial vars x))
                   | otherwise                   = Left $ IncorrectUsageError "cannot apply factorial to a non int value"
 
+--returns x % y when both x and y evaluate to "Val" and y is not 0
 eval vars (Mod x y) | getExprType vars x == "Val" && getExprType vars y == "Val" && getVal vars y /= 0 = Right (Just $ IntVal $ mod (getVal vars x) (getVal vars y))
                     | otherwise                                                                        = Left $ IncorrectUsageError "can only perform the mudulus function on ints"
+
+--converts a to a string
 eval vars (ToString a) = Right $ Just (StrVal (getStrVal vars a))
+
+--convertd a Val or a FVal to a Val, otherwise returns an error
 eval vars (ToInt a)    = case getExprType vars a of
                                    "Val" -> eval vars a
                                    "FVal"-> Right $ Just (IntVal $ getVal vars a)
                                    otherwise -> Left $ IncorrectUsageError "cannot convert string or bool to int"
+
+--returns the result of a && b if a and b are "Bool"s, returns an error otherwise
 eval vars (And a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (getBool vars a && getBool vars b))
                     | otherwise                                                    = Left $ IncorrectUsageError "Cannot perform boolean comparisons on non boolean variables"
+
+--returns the result of a || b if a and b are "Bool"s, returns an error otherwise
 eval vars (Or a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (getBool vars a || getBool vars b))
                    | otherwise                                                    = Left $ IncorrectUsageError "Cannot perform boolean comparisons on non boolean variables"
+
+--returns the result of a -> b if a and b are "Bool"s, returns an error otherwise
 eval vars (Implies a b) | getExprType vars a == "Bool" && getExprType vars b == "Bool" = Right $ Just (BoolVal (not (getBool vars a) || getBool vars b))
                         | otherwise                                                    = Left $ IncorrectUsageError "Cannot perform boolean comparisons on non boolean variables"
 
-
+--returns the boolean resulting from x < y, if the types of x and y are types that can be compared
 eval vars (Less x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
                                                  "Val" -> Right $ Just (BoolVal (getLit vars x < getLit vars y))
@@ -177,6 +200,7 @@ eval vars (Less x y) = case getExprType vars y of
                                                  "Bool" -> Right $ Just (BoolVal (getLit vars x < getLit vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
 
+--returns the boolean resulting from x > y, if the types of x and y are types that can be compared
 eval vars (Greater x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
                                                  "Val" -> Right $ Just (BoolVal (getLit vars x > getLit vars y))
@@ -193,6 +217,7 @@ eval vars (Greater x y) = case getExprType vars y of
                                                  "Bool" -> Right $ Just (BoolVal (getLit vars x > getLit vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
 
+--returns the boolean resulting from x == y, if the types of x and y are types that can be compared
 eval vars (Same x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
                                                  "Val" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
@@ -209,84 +234,107 @@ eval vars (Same x y) = case getExprType vars y of
                                                  "Bool" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
 
-
+--returns the boolean resulting from not a, if a is a boolean when evaluated
 eval vars (Not a) | (getExprType vars a) == "Bool" = Right $ Just (BoolVal $ not (getBool vars (getExpr (removeJust $ removeMaybe $ eval vars a))))
                   | otherwise               = Left $ IncorrectUsageError "Cannot perform boolean comparisons on non boolean variables"
 
-
+--performs trigonometric functions on values if they match certain conditions
 eval vars (Sin (FVal x)) = Right $ Just (FloatVal (sin (getFloatVal vars (FVal x))))
 eval vars (Sin (Val x)) = Right $ Just (FloatVal (sin (getFloatVal vars (Val x))))
 eval vars (Sin x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Cos (FVal x)) = Right $ Just (FloatVal (cos (getFloatVal vars (FVal x))))
 eval vars (Cos (Val x)) = Right $ Just (FloatVal (cos (getFloatVal vars (Val x))))
 eval vars (Cos x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Tan (FVal x)) = Right $ Just (FloatVal (tan (getFloatVal vars (FVal x))))
 eval vars (Tan (Val x)) = Right $ Just (FloatVal (tan (getFloatVal vars (Val x))))
 eval vars (Tan x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arcsin (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (asin (getFloatVal vars (FVal x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arcsin (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (asin (getFloatVal vars (Val x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arcsin x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arccos (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acos (getFloatVal vars (FVal x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arccos (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acos (getFloatVal vars (Val x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arccos x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arctan (FVal x)) = Right $ Just (FloatVal (atan (getFloatVal vars (FVal x))))
 eval vars (Arctan (Val x)) = Right $ Just (FloatVal (atan (getFloatVal vars (Val x))))
 eval vars (Arctan x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Sinh (FVal x)) = Right $ Just (FloatVal (sinh (getFloatVal vars (FVal x))))
 eval vars (Sinh (Val x)) = Right $ Just (FloatVal (sinh (getFloatVal vars (Val x))))
 eval vars (Sinh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Cosh (FVal x)) = Right $ Just (FloatVal (cosh (getFloatVal vars (FVal x))))
 eval vars (Cosh (Val x)) = Right $ Just (FloatVal (cosh (getFloatVal vars (Val x))))
 eval vars (Cosh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Tanh (FVal x)) = Right $ Just (FloatVal (tanh (getFloatVal vars (FVal x))))
 eval vars (Tanh (Val x)) = Right $ Just (FloatVal (tanh (getFloatVal vars (Val x))))
 eval vars (Tanh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arcsinh (FVal x)) = Right $ Just (FloatVal (asinh (getFloatVal vars (FVal x))))
 eval vars (Arcsinh (Val x)) = Right $ Just (FloatVal (asinh (getFloatVal vars (Val x))))
 eval vars (Arcsinh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arccosh (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acosh (getFloatVal vars (FVal x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers inside -1 <= x <= 1"
 eval vars (Arccosh (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acosh (getFloatVal vars (Val x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers inside -1 <= x <= 1"
 eval vars (Arccosh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Arctanh (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars (FVal x))))
                              | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arctanh (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars (Val x))))
                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
 eval vars (Arctanh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+
 eval vars (Abs a) | getExprType vars a == "FVal" = Right $ Just (FloatVal (abs (getFloatVal vars a)))
                   | getExprType vars a == "Val"  = Right $ Just (IntVal (abs (getVal vars a)))
                   | otherwise                    = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
+--returns the type that the Expr gets evaluated down to as a string
 getExprType :: Map Name Lit -> Expr -> String 
-getExprType vars (Val a)  = "Val"
-getExprType vars (FVal a) = "FVal"
-getExprType vars (Bool a) = "Bool"
-getExprType vars (Str a)  = "String"
 getExprType vars a  = toType (removeJust $ removeMaybe $ eval vars a)
 
+--returns the Type of a Lit passed in
 toType :: Lit -> String
 toType (IntVal a)   = "Val"
 toType (FloatVal a) = "FVal"
 toType (BoolVal a)  = "Bool"
 toType (StrVal a)   = "String"
 
-getBool :: Map Name Lit -> Expr -> Bool--implemented by Mohak 
+--returns a bool from a given expression
+getBool :: Map Name Lit -> Expr -> Bool
 getBool vars (Bool b) = b
 getBool vars expr = toBool vars (eval vars expr)
 
-findVar :: Map Name Lit -> Name -> Lit --find index implemented by Mohak 
+toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool
+toBool vars result | isLeft result = error "not boolean"
+                   | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
+
+--finds a variable in the map of variables
+findVar :: Map Name Lit -> Name -> Lit 
 findVar stack n = removeJust (Data.Map.lookup n stack)
 
-getFloatVal :: Map Name Lit -> Expr -> Float--implemented by Mohak 
+--returns a float from a given expression, also converts a Val to a FVal
+getFloatVal :: Map Name Lit -> Expr -> Float
 getFloatVal vars (FVal a) = a
 getFloatVal vars (Val a)  = (fromIntegral a)::Float
-getFloatVal vars a  = toFloat vars ((removeJust $ removeMaybe $ eval vars a))
+getFloatVal vars a  = toFloat vars (removeJust $ removeMaybe $ eval vars a)
 
+toFloat :: Map Name Lit -> Lit -> Float
+toFloat vars (IntVal a) = (fromIntegral a)::Float
+toFloat vars (FloatVal a) = a
+toFloat vars l       = error "cannot convert to int"
+
+--returns a string from a given expression
 getStrVal :: Map Name Lit -> Expr -> String
 getStrVal vars (Str a) = a
 getStrVal vars a = toString (removeJust $ removeMaybe (eval vars a))
@@ -297,33 +345,22 @@ toString (FloatVal a) = show a
 toString (BoolVal a)  = show a
 toString (StrVal a)   = a
 
-getVal :: Map Name Lit -> Expr -> Int--implemented by Mohak 
+--returns an int from a given expression
+getVal :: Map Name Lit -> Expr -> Int
 getVal vars (Val a) = a
 getVal vars (FVal a) = fromInteger (round a)
 getVal vars x = toInt vars (removeJust $ removeMaybe (eval vars x))
 
-isInt :: Float -> Bool
-isInt x = x == fromInteger (round x)
-
-
-
-toInt :: Map Name Lit -> Lit -> Int--implemented by Mohak 
+toInt :: Map Name Lit -> Lit -> Int 
 toInt vars (IntVal a) = a
 toInt vars (FloatVal a)= fromInteger (round a)
 toInt vars l       = error "cannot convert to int"
 
-toFloat :: Map Name Lit -> Lit -> Float--implemented by Mohak 
-toFloat vars (IntVal a) = (fromIntegral a)::Float
-toFloat vars (FloatVal a) = a
-toFloat vars l       = error "cannot convert to int"
+--returns true if the Float can be converted to a int without changing its value
+isInt :: Float -> Bool
+isInt x = x == fromInteger (round x)
 
-toBool :: Map Name Lit -> Either Error (Maybe Lit) -> Bool--implemented by Mohak 
-toBool vars result | isLeft result = error "not boolean"
-                   | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
-
-
-
-
+--gets a lit from an expression
 getLit :: Map Name Lit -> Expr -> Lit
 getLit vars (Lit a) = a
 getLit vars (Val a) = IntVal a
@@ -332,6 +369,7 @@ getLit vars (FVal a)= FloatVal a
 getLit vars (Bool a)= BoolVal a
 getLit vars a = removeJust $ removeMaybe $ eval vars a
 
+--gets an expression from a lit
 getExpr :: Lit -> Expr
 getExpr (IntVal a)  = Val a
 getExpr (StrVal a)  = Str a
@@ -339,71 +377,140 @@ getExpr (BoolVal a) = Bool a
 getExpr (FloatVal a)= FVal a
 getExpr _           = Val 0
 
---Mohak
+--returns the factorial value as an int
 factorial :: Map Name Lit -> Expr -> Int
 factorial _ (Val 0) = 1
 factorial vars n =  getVal vars n * factorial vars (Val (getVal vars n - 1))
 
-ass                         :: Parser (Name, Expr)
-ass                         =  do n <- token ident
-                                  char '='
-                                  eq <- algebra3
-                                  return (n, eq)
-                                ||| do (a, s) <- ass_str
+--parser returns a command
+pCommand2 :: Parser Command
+pCommand2 = do (name, args, body) <- assign_func
+               return (Def name args body)
+              ||| do (name, vars) <- call_func
+                     return (Call name vars)
+              ||| do (cond, body) <- while
+                     return (While cond body)
+              ||| do command <- Expr.repeat
+                     return command
+              ||| do (cond, body) <- if_comd
+                     return (If cond body)
+              ||| do (t, content) <- assign
+                     return (Set t content)
+              ||| do string "print"
+                     space
+                     out_math <- algebra3
+                     return (Print out_math)
+              ||| do string "print"
+                     space
+                     out_str <- multi_str_cat
+                     return (Print (Str out_str))
+              ||| do string "print"
+                     space
+                     out <- token ident
+                     return (Print (Var out))
+
+--parses in a function definition
+assign_func :: Parser (String, [Expr], [Command])
+assign_func = do  char ':'
+                  func <- token ident
+                  args <- token tuple
+                  char '='
+                  token (string "{")
+                  body <- many pCommand2
+                  token (string "}")
+                  return (func, args, body)
+
+--parses in a function call
+call_func :: Parser (Name, [Expr])
+call_func = do char ':'
+               n <- token ident
+               a <- token tuple
+               return (n, a)
+
+--parses in a while loop
+while :: Parser (Expr, [Command])
+while = do char '?'
+           cond <- token boolean2
+           char '?'
+           token (string "<<")
+           body <- many pCommand2
+           token (string ">>")
+           return (cond, body)
+
+--parses in a repeat loop
+repeat :: Parser Command
+repeat = do token (char '#')
+            num <- token int
+            space
+            char '{'
+            body <- many pCommand2
+            char '}'
+            return (Repeat num body)
+
+--parses in a if command
+if_comd :: Parser (Expr, [Command])
+if_comd = do char '?'
+             cond <- token boolean2
+             space
+             char '{'
+             body <- many pCommand2
+             char '}'
+             return (cond, body)
+
+--parses in variable assignment
+assign                         :: Parser (Name, Expr)
+assign                         =  do n <- token ident
+                                     char '='
+                                     eq <- algebra3
+                                     return (n, eq)
+                                ||| do (a, s) <- assign_str
                                        return (a, Str s)
-                                ||| do (a, b) <- ass_bool
+                                ||| do (a, b) <- assign_bool
                                        return (a, b)
-                                
-ass_number                       :: Parser (String, Expr)
-ass_number                       = do a <- token ident
-                                      char '='
-                                      b <- token float
-                                      return (a, FVal b)
-                                   ||| do a <- token ident
+
+--parses in a boolean assignment
+assign_bool                         :: Parser (String, Expr)
+assign_bool                         =  do a <- token ident
                                           char '='
-                                          b <- token integer
-                                          return (a, Val b)
+                                          b <- token boolean2
+                                          return (a, b)
 
+--parses in boolean operators
+boolean2 :: Parser Expr
+boolean2 = do a <- token bool
+              string "||"
+              b <- token $ getBools "||"
+              return (Or a b)
+              ||| do a <- token bool
+                     string "&&"
+                     b <- getBools "&&"
+                     return (And a b)
+              ||| do a <- token bool
+                     string "->"
+                     b <- getBools "->"
+                     return (Implies a b)
+              ||| do a <- token bool
+                     return a
 
-trig :: Parser Expr
-trig = do token $ string "asinh"
-          a <- token clause2
-          return (Arcsinh a)
-          ||| do token $ string "acosh"
-                 a <- token clause2
-                 return (Arccosh a)
-          ||| do token $ string "atanh"
-                 a <- token clause2
-                 return (Arctanh a)
-          ||| do token $ string "asin"
-                 a <- token clause2
-                 return (Arcsin a)
-          ||| do token $ string "acos"
-                 a <- token clause2
-                 return (Arccos a)
-          ||| do token $ string "atan"
-                 a <- token clause2
-                 return (Arctan a)
-          ||| do token $ string "sinh"
-                 a <- token clause2
-                 return (Sinh a)
-          ||| do token $ string "cosh"
-                 a <- token clause2
-                 return (Cosh a)
-          ||| do token $ string "tanh"
-                 a <- token clause2
-                 return (Tanh a)
-          ||| do token $ string "sin"
-                 a <- token clause2
-                 return (Sin a)
-          ||| do token $ string "cos"
-                 a <- token clause2
-                 return (Cos a)
-          ||| do token $ string "tan"
-                 a <- token clause2
-                 return (Tan a)
+--parses in more boolean stuff (3<4) etc
+bool :: Parser Expr
+bool = do char '('
+          a <- boolean2
+          char ')'
+          return a
+          ||| do char '~'
+                 a <- bool
+                 return (Not a)
+          ||| do a <- token bool_literal 
+                 return (Bool a)
+          ||| do a <- algebra3orText
+                 x <- comparator
+                 b <- algebra3orText
+                 return (dop x a b)
+          ||| do a <- algebra3
+                 return a
 
---TODO: add abs and trig functions, maybe slightly fix pow
+--parses in values in an algebraic order
 algebra3                           :: Parser Expr
 algebra3                           = do a <- token clause2
                                         char '!'
@@ -443,6 +550,46 @@ algebra3                           = do a <- token clause2
                                      ||| do a <- token clause2
                                             return a
 
+--parses in trigonometric functions
+trig :: Parser Expr
+trig = do token $ string "asinh"
+          a <- token clause2
+          return (Arcsinh a)
+          ||| do token $ string "acosh"
+                 a <- token clause2
+                 return (Arccosh a)
+          ||| do token $ string "atanh"
+                 a <- token clause2
+                 return (Arctanh a)
+          ||| do token $ string "asin"
+                 a <- token clause2
+                 return (Arcsin a)
+          ||| do token $ string "acos"
+                 a <- token clause2
+                 return (Arccos a)
+          ||| do token $ string "atan"
+                 a <- token clause2
+                 return (Arctan a)
+          ||| do token $ string "sinh"
+                 a <- token clause2
+                 return (Sinh a)
+          ||| do token $ string "cosh"
+                 a <- token clause2
+                 return (Cosh a)
+          ||| do token $ string "tanh"
+                 a <- token clause2
+                 return (Tanh a)
+          ||| do token $ string "sin"
+                 a <- token clause2
+                 return (Sin a)
+          ||| do token $ string "cos"
+                 a <- token clause2
+                 return (Cos a)
+          ||| do token $ string "tan"
+                 a <- token clause2
+                 return (Tan a)
+
+--parses in strings an numbers as well absolutes
 clause2                              :: Parser Expr
 clause2                              = do char '('
                                           a <- algebra3
@@ -461,24 +608,7 @@ clause2                              = do char '('
                                      ||| do a <- token multi_str_cat 
                                             return (Str a)
 
-                                         
-
-ass_bool                         :: Parser (String, Expr)
-ass_bool                         =  do a <- token ident
-                                       char '='
-                                       b <- token boolean2
-                                       return (a, b)
-
-ass_func :: Parser (String, [Expr], [Command])
-ass_func = do  char ':'
-               func <- token ident
-               args <- token tuple
-               char '='
-               token (string "{")
-               body <- many pCommand2
-               token (string "}")
-               return (func, args, body)
-
+--parses in a number of identifiers seperated by commas with the method just bellow   
 comma_seq :: Parser [Expr]
 comma_seq = do s1 <- token ident
                string ","
@@ -495,6 +625,7 @@ multi_comma_seq = do s1 <- token comma_seq
                 ||| do s <- token comma_seq
                        return s
 
+--parses in multiple algebraic or text values with the method just bellow
 multi_algebra3orText :: Parser [Expr]
 multi_algebra3orText = do a <- token multiAlgebra3OrText
                           char ','
@@ -511,6 +642,7 @@ multiAlgebra3OrText = do a <- token algebra3orText
                          ||| do a <- token algebra3orText
                                 return [a]
 
+--parses the bracketed part after a function can contain only variable names or any values
 tuple :: Parser [Expr]
 tuple = do token (char '(')
            vals <- multi_comma_seq
@@ -520,73 +652,30 @@ tuple = do token (char '(')
                   vals <- multi_algebra3orText
                   token $ char ')'
                   return vals
-           
-boolean2 :: Parser Expr
-boolean2 = do a <- token bool
-              string "||"
-              b <- token $ getBools "||"
-              return (Or a b)
-              ||| do a <- token bool
-                     string "&&"
-                     b <- getBools "&&"
-                     return (And a b)
-              ||| do a <- token bool
-                     string "->"
-                     b <- getBools "->"
-                     return (Implies a b)
-              ||| do a <- token bool
-                     return a
 
-bool :: Parser Expr
-bool = do char '('
-          a <- boolean2
-          char ')'
-          return a
-          ||| do char '~'
-                 a <- bool
-                 return (Not a)
-          ||| do a <- token bool_literal 
-                 return (Bool a)
-          ||| do a <- algebra3orText
-                 x <- comparator
-                 b <- algebra3orText
-                 return (dop x a b)
-          ||| do a <- algebra3
-                 return a
-
+--parses either algebra or a string
 algebra3orText :: Parser Expr
 algebra3orText = do a <- multi_str_cat
                     return (Str a)
                     ||| do a <- algebra3
                            return a
 
+--parses the boolean values on either side of a boolean operator
 getBools :: String -> Parser Expr
 getBools s = do a <- token bool
                 string s
                 b <- getBools s
-                return (Or a b)
+                return (op s a b)
                 ||| do a <- token bool
                        return a
                 
+--returns an expression based on the value spassed in
+op :: String -> Expr -> Expr -> Expr
+op "&&" a b = And a b
+op "||" a b = Or a b
+op "->" a b = Implies a b
 
-while :: Parser (Expr, [Command])
-while = do char '?'
-           cond <- token boolean2
-           char '?'
-           token (string "<<")
-           body <- many pCommand2
-           token (string ">>")
-           return (cond, body)
-
-repeat :: Parser Command
-repeat = do token (char '#')
-            num <- token int
-            space
-            char '{'
-            body <- many pCommand2
-            char '}'
-            return (Repeat num body)
-
+--returns an expression based on the value spassed in
 dop :: String -> Expr -> Expr -> Expr
 dop "==" a b = Same a b
 dop ">" a b = Greater a b
@@ -594,45 +683,3 @@ dop "<" a b = Less a b
 dop ">=" a b = Or (Greater a b) (Same a b)
 dop "<=" a b = Or (Less a b) (Same a b)
 dop "~=" a b = Not (Same a b)
-
-
-pCommand2 :: Parser Command
-pCommand2 = do (name, args, body) <- ass_func
-               return (Def name args body)
-              ||| do (name, vars) <- call_func
-                     return (Call name vars)
-              ||| do (cond, body) <- while
-                     return (While cond body)
-              ||| do command <- Expr.repeat
-                     return command
-              ||| do (cond, body) <- if_comd
-                     return (If cond body)
-              ||| do (t, content) <- ass
-                     return (Set t content)
-              ||| do string "print"
-                     space
-                     out_math <- algebra3
-                     return (Print out_math)
-              ||| do string "print"
-                     space
-                     out_str <- multi_str_cat
-                     return (Print (Str out_str))
-              ||| do string "print"
-                     space
-                     out <- token ident
-                     return (Print (Var out))
-
-if_comd :: Parser (Expr, [Command])
-if_comd = do char '?'
-             cond <- token boolean2
-             space
-             char '{'
-             body <- many pCommand2
-             char '}'
-             return (cond, body)
-
-call_func :: Parser (Name, [Expr])
-call_func = do char ':'
-               n <- token ident
-               a <- token tuple
-               return (n, a)
