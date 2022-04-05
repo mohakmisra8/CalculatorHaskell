@@ -17,7 +17,7 @@ data FuncSig = FuncID Name Int
   deriving (Eq, Ord)
  --deriving instance Ord k => Ord (FuncSig)
 --Type returned arguments commands
-data FuncBody = FuncData Type [Expr] [Command]
+data FuncBody = FuncData [Expr] [Command]
 
 initLState :: (Map Name Lit, Map FuncSig FuncBody)
 initLState = (Map.empty, Map.empty)
@@ -42,8 +42,7 @@ updateVars n i vars =if Map.member n vars then
 
 process :: (Map Name Lit, Map FuncSig FuncBody) -> Command -> IO (Map Name Lit, Map FuncSig FuncBody)
 process st (Set var e)
-     = do putStrLn $ show $ eval (fst st) e
-          if isLeft (eval (fst st) e)
+     = do if isLeft (eval (fst st) e)
                --handle error
                then do putStrLn "handle this error"
                        return st
@@ -57,8 +56,7 @@ process st (Set var e)
 
 process st (Print e)
 -- prints out Str "variable_name" or Val number rather than "variable_name" or number
-     = do putStrLn $ show $ eval (fst st) e
-          putStrLn $ litToString (removeJust $ removeMaybe (eval (fst st) e))
+     = do putStrLn $ litToString (removeJust $ removeMaybe (eval (fst st) e))
 
           -- Print the result of evaluation
           return st
@@ -77,11 +75,11 @@ process st (While c body)
                       st'' <- process st' (While c body)
                       return st''
 
-process st (Def ret_type name args body)
+process st (Def name args body)
      = if Map.member (FuncID name (length args)) (snd st) then
           error "Duplicate function definition attempted"
        else
-          do let st' = Map.insert (FuncID name (length args)) (FuncData ret_type args body) (snd st)
+          do let st' = Map.insert (FuncID name (length args)) (FuncData args body) (snd st)
              let st'' = (fst st, st')
              return st''
 process st (Call name args)
@@ -109,10 +107,10 @@ processMultipleCommands st commands | length commands <= 1 = do st' <- process s
                                                                 return st''
 
 funcBodyArgList :: FuncBody -> [Expr]
-funcBodyArgList (FuncData t a c) = a
+funcBodyArgList (FuncData a c) = a
 
 funcBodyCommandList :: FuncBody -> [Command]
-funcBodyCommandList (FuncData t a c) = c
+funcBodyCommandList (FuncData a c) = c
 
 toMap :: Map Name Lit -> [(Name, Expr)] -> Map Name Lit -> Map Name Lit
 toMap st [] map = map
@@ -140,22 +138,25 @@ repl :: InputT (StateT (Map Name Lit, Map FuncSig FuncBody) IO) ()
 repl = do maybeInput <- getInputLine "> "
           --print out the map
           st <- lift get
-          liftIO $ print $ toList (fst st)
-
           case maybeInput of
                Nothing     -> return ()
                Just "quit" -> return ()
                --tab completion leaves a space after the completed word
                Just "quit "-> return ()
+               Just "help "-> do outputStrLn helpString
+                                 repl
+               Just "help" -> do outputStrLn helpString
+                                 repl
                Just inp    -> do st <- lift get
                                  case parse pCommand2 inp of
-                                      [(cmd, "")] -> do outputStrLn $ show cmd
-                                                        st' <- liftIO $ process st cmd
-                                                        --outputStrLn $ show cmd
+                                      [(cmd, "")] -> do st' <- liftIO $ process st cmd
                                                         lift $ put st'
                                                         repl
                                       _           -> do outputStrLn "Parse Error"
                                                         repl
+
+helpString :: String
+helpString = "-- Types Supported --\n\nInteger 124\nFloat -1.34e5\nString \"string\"\nBoolean True/False\n\n\n-- Mathematical Operators --\n\nAdd + (also used to concatenate two strings)\nSubtract -\nMultiply *\nDivide /\nRaise to the Power ^\nModulus %\nFactorial !\nAbsolute Value |value|\n\n\n-- Trigonometric Functions --\n\nsin\ncos\ntan\nsinh\ncosh\ntanh\nasin\nacos\natan\nasinh\nacosh\natanh\n\n\n-- Comparisons --\nCan compare types Float and Integer against each other\n\nEquals ==\nLess Than <\nGreater Than >\nLess Than Or Equals <=\nGreater Than or Equals >=\nNot Equals ~=\n\n\n-- Boolean Operators --\n\nAnd &&\nOr ||\nNot ~\nImplies ->\n\n\n-- Recursion --\n\nRepeat x times\n# x {commands}\n\nWhile x is true\n?x? <<commands>>\n\n\n-- Decisions --\n\nIf x do something\n?x {commands}\n\n\n-- Function Definition/Calling --\nBe aware that there are no global variables\n\n:function_name(variable, names) = {commands}\n\n:function_name(values, passed_in)\n\n\n-- Conversion Functions --\n\nToInt\n|value_to_be_converted_to_int\n\nToString\n_value_to_be_converted_to_string"
 
 --repl = do liftIO $ putStr "> "
           --inp <- liftIO getLine
@@ -212,7 +213,7 @@ replForFiles st filepath = do commands <- getLinesFromFile filepath
 replMultipleCommands :: [String] -> StateT (Map Name Lit, Map FuncSig FuncBody) IO ()
 replMultipleCommands [] = do liftIO $ putStrLn "Done"
                              return ()
-replMultipleCommands commands = case parse pCommand (head commands) of
+replMultipleCommands commands = case parse pCommand2 (head commands) of
                                          [(cmd, "")] -> do st <- get
                                                            st' <- liftIO $ process st cmd
                                                            put st'

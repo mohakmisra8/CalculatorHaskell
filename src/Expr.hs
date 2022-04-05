@@ -63,7 +63,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
              | Print Expr    -- evaluate an expression and print the result
              | While Expr [Command]
              | Repeat Int [Command] -- evaluate an expression and run a series of commands while it is true
-             | Def Type Name [Expr] [Command]
+             | Def Name [Expr] [Command]
              | Call Name [Expr]
              | If Expr [Command]
              | Return Expr
@@ -571,16 +571,15 @@ ass_bool                         =  do a <- token ident
                                        b <- token boolean2
                                        return (a, b)
 
-ass_func :: Parser (String, String, [Expr], [Command])
-ass_func = do  ret_type <- token type_decl
-               space
+ass_func :: Parser (String, [Expr], [Command])
+ass_func = do  char ':'
                func <- token ident
                args <- token tuple
                char '='
                token (string "{")
-               body <- many pCommand
+               body <- many pCommand2
                token (string "}")
-               return (ret_type, func, args, body)
+               return (func, args, body)
 
 comma_seq :: Parser [Expr]
 comma_seq = do s1 <- token ident
@@ -677,7 +676,7 @@ while = do char '?'
            cond <- token boolean2
            char '?'
            token (string "<<")
-           body <- many pCommand
+           body <- many pCommand2
            token (string ">>")
            return (cond, body)
 
@@ -686,7 +685,7 @@ repeat = do token (char '#')
             num <- token int
             space
             char '{'
-            body <- many pCommand
+            body <- many pCommand2
             char '}'
             return (Repeat num body)
 
@@ -737,27 +736,7 @@ value_int                    =  do name <- token ident
                                return (Val num)
 
 
-pCommand :: Parser Command
-pCommand = do (ret_type, name, args, body) <- ass_func
-              return (Def ret_type name args body)
-           ||| do (cond, body) <- while
-                  return (While cond body)
-           |||do (t, content) <- ass
-                 return (Set t content)
-           |||do command <- Expr.repeat
-                 return command
-           ||| do string "print"
-                  space
-                  out_math <- algebra
-                  return (Print out_math)
-           ||| do string "print"
-                  space
-                  out_str <- multi_str_cat
-                  return (Print (Str out_str))
-           ||| do string "print"
-                  space
-                  out <- token ident
-                  return (Print (Var out))
+
 --done by MOHAK
 pExpr :: Parser Expr
 pExpr = do t <- pTerm
@@ -792,8 +771,8 @@ pTerm = do f <- pFactor
 
 
 pCommand2 :: Parser Command
-pCommand2 = do (ret_type, name, args, body) <- ass_func
-               return (Def ret_type name args body)
+pCommand2 = do (name, args, body) <- ass_func
+               return (Def name args body)
               ||| do (name, vars) <- call_func
                      return (Call name vars)
               ||| do (cond, body) <- while
@@ -822,7 +801,7 @@ if_comd = do char '?'
              cond <- token boolean2
              space
              char '{'
-             body <- many pCommand
+             body <- many pCommand2
              char '}'
              return (cond, body)
 
