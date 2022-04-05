@@ -203,8 +203,8 @@ eval vars (Same x y) = case getExprType vars y of
                                                  "Val" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
                                                  "FVal"-> Right $ Just (BoolVal (getLit vars x == getLit vars y))
                                                  otherwise -> Left $ error "cannot perform comparison between two different types"
-                                 "Str" -> case getExprType vars x of
-                                                 "Str" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
+                                 "String" -> case getExprType vars x of
+                                                 "String" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
                                                  otherwise -> Left $ error "cannot perform comparison between two different types"
                                  "Bool"-> case getExprType vars x of
                                                  "Bool" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
