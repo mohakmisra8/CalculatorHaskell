@@ -69,24 +69,24 @@ Advanced parsers
 
 
 
-ass_int                         :: Parser (String, Int)
-ass_int                         =  do a <- token ident
-                                      char '='
-                                      b <- token integer
-                                      return (a, b)
+assign_int                         :: Parser (String, Int)
+assign_int                         =  do a <- token ident
+                                         char '='
+                                         b <- token integer
+                                         return (a, b)
 
 
-ass_str                         :: Parser (String, String)
-ass_str                         =  do a <- token ident
-                                      char '='
-                                      b <- token multi_str_cat
-                                      return (a, b)
+assign_str                         :: Parser (String, String)
+assign_str                         =  do a <- token ident
+                                         char '='
+                                         b <- token multi_str_cat
+                                         return (a, b)
 
-ass_float                       :: Parser (String, Float)
-ass_float                       =  do a <- token ident
-                                      char '='
-                                      b <- token float
-                                      return (a, b)
+assign_float                       :: Parser (String, Float)
+assign_float                       =  do a <- token ident
+                                         char '='
+                                         b <- token float
+                                         return (a, b)
        
 
 char_seq :: Parser String
@@ -95,6 +95,9 @@ char_seq = do char '"'
               xs <- many alphanumspace
               char '"'
               return (x:xs)
+              ||| do char '"'
+                     char '"'
+                     return ("")
 
 
 str_cat :: Parser String
