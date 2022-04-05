@@ -95,6 +95,9 @@ char_seq = do char '"'
               xs <- many alphanumspace
               char '"'
               return (x:xs)
+              ||| do char '"'
+                     char '"'
+                     return ("")
 
 
 str_cat :: Parser String

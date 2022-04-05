@@ -90,7 +90,9 @@ process st (Call name args)
                                                                   processFunc tempMap (snd st) (funcBodyCommandList func)
                                                                   return st
        else error "could not find function"
-                                                                  
+process st (If cond body)
+     | (removeJust $ removeMaybe $ eval (fst st) cond) == BoolVal False = return st
+     | otherwise                                                        = processMultipleCommands st body                                                     
 
 
      {-| length body == 1 = do st' <- liftIO $ (process st (body!!0))

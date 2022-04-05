@@ -6,6 +6,7 @@ import Test.QuickCheck.Monadic
 
 import Data.Map
 import qualified Data.Map as Map
+import Data.Either
 
 import REPL
 import Expr
@@ -102,7 +103,7 @@ prop_testEvalSubxy2Floats x y = FloatVal (x - y) == removeJust (removeMaybe eval
                                 where evalReturn = eval testMap (Sub (FVal x) (FVal y))
 
 prop_testEvalDivxy :: Int -> Int -> Bool
-prop_testEvalDivxy x 0 = (IntVal 0) == removeJust (removeMaybe evalReturn)
+prop_testEvalDivxy x 0 = isLeft evalReturn
                          where evalReturn = eval testMap (Div (Val x) (Val 0))
 prop_testEvalDivxy x y = FloatVal (a/b) == removeJust (removeMaybe evalReturn)
                          where a = (fromIntegral x)::Float
@@ -110,15 +111,14 @@ prop_testEvalDivxy x y = FloatVal (a/b) == removeJust (removeMaybe evalReturn)
                                evalReturn = eval testMap (Div (Val x) (Val y))
 
 prop_testEvalDivxy1Float :: Int -> Float -> Bool
-prop_testEvalDivxy1Float x 0 = (IntVal 0) == removeJust (removeMaybe evalReturn)
+prop_testEvalDivxy1Float x 0 = isLeft evalReturn
                                where evalReturn = eval testMap (Div (Val x) (FVal 0))
 prop_testEvalDivxy1Float x y = FloatVal (a/y) == removeJust (removeMaybe evalReturn)
                                where a = (fromIntegral x)::Float
                                      evalReturn = eval testMap (Div (Val x) (FVal y))
 
 prop_testEvalDivxy2Float :: Float -> Float -> Bool
-prop_testEvalDivxy2Float x y | x == 0 = (IntVal 0) == removeJust (removeMaybe evalReturn)
-                             | y == 0 = (IntVal 0) == removeJust (removeMaybe evalReturn)
+prop_testEvalDivxy2Float x y | y == 0 = isLeft evalReturn
                              | otherwise = FloatVal (x/y) == removeJust (removeMaybe evalReturn)
                                            where evalReturn = eval testMap (Div (FVal x) (FVal y))
 
@@ -167,11 +167,11 @@ prop_testEvalPowxy2FLoat x y | x < 0 && (not $ isInt y) = IntVal 0 == removeJust
 
 prop_testFacx :: Int -> Bool
 prop_testFacx x | x >= 0    = IntVal (factorial testMap (Val x)) == removeJust (removeMaybe evalReturn)
-                | otherwise = IntVal 0 == removeJust (removeMaybe evalReturn)
+                | otherwise = isLeft evalReturn
                   where evalReturn = eval testMap (Fac (Val x))
 
 prop_testModxy :: Int -> Int -> Bool
-prop_testModxy x 0 = IntVal 0 == removeJust (removeMaybe evalReturn)
+prop_testModxy x 0 = isLeft evalReturn
                      where evalReturn = eval testMap (Mod (Val x) (Val 0))
 prop_testModxy x y = IntVal (x `mod` y) == removeJust (removeMaybe evalReturn)
                      where evalReturn = eval testMap (Mod (Val x) (Val y))
