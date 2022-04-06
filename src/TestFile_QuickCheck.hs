@@ -170,6 +170,7 @@ prop_testFacx x | x >= 0    = IntVal (factorial testMap (Val x)) == removeJust (
                 | otherwise = isLeft evalReturn
                   where evalReturn = eval testMap (Fac (Val x))
 
+--Used to test the modulus function 
 prop_testModxy :: Int -> Int -> Bool
 prop_testModxy x 0 = isLeft evalReturn
                      where evalReturn = eval testMap (Mod (Val x) (Val 0))

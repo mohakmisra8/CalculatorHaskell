@@ -106,7 +106,7 @@ eval vars (Add x y) = case getExprType vars x of
                                                      "String"  -> Right $ Just (StrVal ((getStrVal vars x) ++ (getStrVal vars y)))
                                                      otherwise -> Left $ IncorrectUsageError "cannot concatenate a non string"
                                 -- if x is a boolean return an error
-                                otherwise -> Left $ IncorrectUsageError "Cannot add bolean values"
+                                otherwise -> Left $ IncorrectUsageError "Cannot add boolean values"
 
 --subtracts the values, checking the types of x and y as above
 eval vars (Sub x y) = case getExprType vars x of
@@ -329,6 +329,7 @@ getFloatVal vars (FVal a) = a
 getFloatVal vars (Val a)  = (fromIntegral a)::Float
 getFloatVal vars a  = toFloat vars (removeJust $ removeMaybe $ eval vars a)
 
+--used to convert an int to float
 toFloat :: Map Name Lit -> Lit -> Float
 toFloat vars (IntVal a) = (fromIntegral a)::Float
 toFloat vars (FloatVal a) = a
@@ -513,38 +514,38 @@ bool = do char '('
 --parses in values in an algebraic order
 algebra3                           :: Parser Expr
 algebra3                           = do a <- token clause2
-                                        char '!'
+                                        char '!'--case for factortial
                                         return (Fac a)
-                                     ||| do a <- token trig
+                                     ||| do a <- token trig--for trig
                                             return a
-                                     ||| do a <- token clause2
+                                     ||| do a <- token clause2--for power
                                             char '^'
                                             b <- token clause2
                                             return (Pow a b)
-                                     ||| do a <- token clause2
+                                     ||| do a <- token clause2--for multiplication
                                             char '*'
                                             b <- token clause2
                                             return (Mult a b)
                                      ||| do a <- token clause2
-                                            char '/'
+                                            char '/'-- for division
                                             b <- token clause2
                                             return (Div a b)
                                      ||| do a <- token clause2
-                                            char '%'
+                                            char '%'--for modulus
                                             b <- token clause2
                                             return (Mod a b)
                                      ||| do a <- token clause2
-                                            char '+'
+                                            char '+'--for addition
                                             b <- token clause2
                                             return (Add a b)
                                      ||| do a <- token clause2
-                                            char '-'
+                                            char '-'--for subrtractions
                                             b <- token clause2
                                             return (Sub a b)
                                      ||| do char '_'
                                             a <- token clause2
                                             return (ToString a)
-                                     ||| do char '|'
+                                     ||| do char '|'--for abs
                                             a <- token clause2
                                             return (ToInt a)
                                      ||| do a <- token clause2
@@ -552,40 +553,40 @@ algebra3                           = do a <- token clause2
 
 --parses in trigonometric functions
 trig :: Parser Expr
-trig = do token $ string "asinh"
+trig = do token $ string "asinh"--inverse sinh
           a <- token clause2
           return (Arcsinh a)
-          ||| do token $ string "acosh"
+          ||| do token $ string "acosh"--inverse cosh
                  a <- token clause2
                  return (Arccosh a)
-          ||| do token $ string "atanh"
+          ||| do token $ string "atanh"--inverse tanh
                  a <- token clause2
                  return (Arctanh a)
-          ||| do token $ string "asin"
+          ||| do token $ string "asin"--sin
                  a <- token clause2
                  return (Arcsin a)
-          ||| do token $ string "acos"
+          ||| do token $ string "acos"--inverse cos
                  a <- token clause2
                  return (Arccos a)
-          ||| do token $ string "atan"
+          ||| do token $ string "atan"--inverse tan
                  a <- token clause2
                  return (Arctan a)
-          ||| do token $ string "sinh"
+          ||| do token $ string "sinh"--sinh
                  a <- token clause2
                  return (Sinh a)
-          ||| do token $ string "cosh"
+          ||| do token $ string "cosh"--cosh
                  a <- token clause2
                  return (Cosh a)
-          ||| do token $ string "tanh"
+          ||| do token $ string "tanh"--tannh
                  a <- token clause2
                  return (Tanh a)
-          ||| do token $ string "sin"
+          ||| do token $ string "sin"--sin
                  a <- token clause2
                  return (Sin a)
-          ||| do token $ string "cos"
+          ||| do token $ string "cos"--cos
                  a <- token clause2
                  return (Cos a)
-          ||| do token $ string "tan"
+          ||| do token $ string "tan"--tan
                  a <- token clause2
                  return (Tan a)
 
@@ -671,9 +672,9 @@ getBools s = do a <- token bool
                 
 --returns an expression based on the value spassed in
 op :: String -> Expr -> Expr -> Expr
-op "&&" a b = And a b
-op "||" a b = Or a b
-op "->" a b = Implies a b
+op "&&" a b = And a b--and fucntion
+op "||" a b = Or a b--or function
+op "->" a b = Implies a b--implies
 
 --returns an expression based on the value spassed in
 dop :: String -> Expr -> Expr -> Expr
