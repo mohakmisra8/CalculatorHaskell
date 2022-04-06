@@ -1,0 +1,55 @@
+print "Basic Arithmetic"
+a = 4 + 4
+b = 4 - 2
+c = 4 * 2
+d = 4 / 2
+print a
+print b
+print c
+print d
+print ""
+print "More Advanced"
+a = 4!
+b = |-4|
+c = |4|
+d = 4 % 2
+e = 4 % 3
+f = 4 ^ 2
+print a
+print b
+print c
+print d
+print e
+print f
+print ""
+print "Sin Cos Tan"
+a = sin (3.141592654/2)
+b = cos 3.141592654
+c = tan (3.141592654/4)
+print a
+print b
+print c
+print ""
+print "Arcsin Arccos Arctan"
+a = asin 1
+b = acos 1
+c = atan 1
+print a
+print b
+print c
+print ""
+print "Sinh Cosh Tanh"
+a = sinh 1
+b = cosh 1
+c = tanh 1
+print a
+print b
+print c
+print ""
+print "Arcsinh Arccosh Arctanh"
+a = asinh 1
+b = acosh 1
+c = atanh 1
+print a
+print b
+print c

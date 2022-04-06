@@ -1,0 +1,6 @@
+a = ((4+6)/(5%3)) + 1e2
+b = (a > 100) && ($F || ($T -> $T))
+c = "test" + "string"
+print a
+print b
+print c

@@ -1,0 +1,20 @@
+a = (3 > 2)
+b = (3 < 1.2e-2)
+c = (3 == 2.3)
+print a
+print b
+print c
+print ""
+a = ("a" < "b")
+b = ("cat" > "boat")
+c = ("boat" == "baot")
+print a
+print b
+print c
+print ""
+a = (a > c)
+b = (a ~= b)
+c = (a < b)
+print a
+print b
+print c

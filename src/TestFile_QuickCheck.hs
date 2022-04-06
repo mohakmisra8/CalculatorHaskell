@@ -18,35 +18,54 @@ testVariables = [("variable1", (IntVal 10000)),("variable2", (StrVal "variable_d
 testMap :: Map Name Lit
 testMap = fromList testVariables
 
---checks that integer values can be added to a variable
---prop_testUpdateVars1 :: String -> Int -> Bool
---prop_testUpdateVars1 var val = updateVars var (IntVal val) [] == returnList
-  --                             where returnList = [(var, (IntVal val))]
+---------------------
+-- test updateVars --
+---------------------
 
---checks that string value can be added to a variable
---prop_testUpdateVars2 :: String -> String -> Bool
---prop_testUpdateVars2 var val = updateVars var (StrVal val) [] == returnList
-  --                             where returnList = [(var, (StrVal val))]
+--checks that integer values can be added to a variable
+prop_testUpdateVars1 :: String -> Int -> Bool
+prop_testUpdateVars1 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == IntVal val
+                               where returnMap = updateVars var (IntVal val) Map.empty
+
+--checks that String values can be added to a variable
+prop_testUpdateVars2 :: String -> String -> Bool
+prop_testUpdateVars2 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == StrVal val
+                               where returnMap = updateVars var (StrVal val) Map.empty
+
+--checks that Boolean values can be added to a variable
+prop_testUpdateVars3 :: String -> Bool -> Bool
+prop_testUpdateVars3 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == BoolVal val
+                               where returnMap = updateVars var (BoolVal val) Map.empty
+
+--checks that integer values can be added to a variable
+prop_testUpdateVars4 :: String -> Float -> Bool
+prop_testUpdateVars4 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == FloatVal val
+                               where returnMap = updateVars var (FloatVal val) Map.empty
 
 --checks that integer values stored in variables can be updated
---prop_testUpdateVars3 :: String -> Int -> Int -> Bool
---prop_testUpdateVars3 var val1 val2 = updateVars var (IntVal val2) (updateVars var (IntVal val1) []) == returnList
-  --                                   where returnList = [(var, (IntVal val2))]
+prop_testUpdateVars5 :: String -> Int -> Bool
+prop_testUpdateVars5 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == IntVal val
+                               where returnMap = updateVars var (IntVal val) (fromList [(var, IntVal 0)])
 
 --checks that string values stored in variables can be updated
---prop_testUpdateVars4 :: String -> String -> String -> Bool
---prop_testUpdateVars4 var val1 val2 = updateVars var (StrVal val2) (updateVars var (StrVal val1) []) == returnList
-  --                                   where returnList = [(var, (StrVal val2))]
+prop_testUpdateVars6 :: String -> String -> Bool
+prop_testUpdateVars6 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == StrVal val
+                               where returnMap = updateVars var (StrVal val) (fromList [(var, StrVal "0")])
 
---checks that a variable storing an integer can be updated to store a string
---prop_testUpdateVars5 :: String -> Int -> String -> Bool
---prop_testUpdateVars5 var val1 val2 = updateVars var (StrVal val2) (updateVars var (IntVal val1) []) == returnList
-  --                                   where returnList = [(var, (StrVal val2))]
+--checks that Boolean values stored in variables can be updated
+prop_testUpdateVars7 :: String -> Bool -> Bool
+prop_testUpdateVars7 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == BoolVal val
+                               where returnMap = updateVars var (BoolVal val) (fromList [(var, BoolVal False)])
 
---checks that a variable storing an integer can be updated to store a string
---prop_testUpdateVars6 :: String -> String -> Int -> Bool
---prop_testUpdateVars6 var val1 val2 = updateVars var (IntVal val2) (updateVars var (StrVal val1) []) == returnList
-  --                                   where returnList = [(var, (IntVal val2))]
+--checks that Float values stored in variables can be updated
+prop_testUpdateVars8 :: String -> Float -> Bool
+prop_testUpdateVars8 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == FloatVal val
+                               where returnMap = updateVars var (FloatVal val) (fromList [(var, FloatVal 0.0)])
+
+--checks that variables can be updated to different types
+prop_testUpdateVars9 :: String -> String -> Bool
+prop_testUpdateVars9 var val = Map.member var returnMap && removeJust (Map.lookup var returnMap) == StrVal val
+                               where returnMap = updateVars var (StrVal val) (fromList [(var, FloatVal 0.0)])
 
 
 ----------------------------------------------------------------------

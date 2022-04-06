@@ -232,7 +232,7 @@ replMultipleCommands commands = case parse pCommand2 (head commands) of
                                                            replMultipleCommands (tail commands)
                                         -- if one of the lines in the file cannot be parsed, terminate the running
                                          _ -> do liftIO $ putStrLn "Error Parsing File"
-                                                 return ()
+                                                 replMultipleCommands (tail commands)
 
 --get the lines from the file in a list of strings
 getLinesFromFile :: String -> IO[String]

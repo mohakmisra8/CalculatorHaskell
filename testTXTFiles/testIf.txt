@@ -1,0 +1,4 @@
+?$T {print "should print"}
+x = (4 == 1)
+?x {print "shouldnt print"}
+?x->$F {print "should print"}
