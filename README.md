@@ -1,6 +1,11 @@
 # Haskell-Project-2
  Haskell Project 2 done by 200004555, Ewan and Deepankaur
 
+ HOW TO RUN THE PROGRAMME:
+ 1) cabal build
+ 2) cabal repl
+ 3) main or 
+
  -- Types Supported --
 
 Integer 124
