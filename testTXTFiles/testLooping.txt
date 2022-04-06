@@ -1,0 +1,3 @@
+# 2 {print "test repeat"}
+x = 4
+?x > 0? <<print "test while" x = x - 1>>

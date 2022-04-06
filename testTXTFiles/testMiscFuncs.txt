@@ -1,0 +1,6 @@
+x = 4.2
+y = |x
+print y
+x = _x
+x = x + " is now a string"
+print x

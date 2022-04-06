@@ -1,0 +1,6 @@
+a = ($T && $T && $F)
+b = ($F || $F || (a -> $F))
+c = ~(b -> a)
+print a
+print b
+print c

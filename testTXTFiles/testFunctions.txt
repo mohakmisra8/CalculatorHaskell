@@ -1,0 +1,4 @@
+:printX(x) = {print x}
+:printEvenNumsUpToX(x) = {?x > 0? <<?(x%2==0) {print x} x = x - 1>>}
+:printX("Test")
+:printEvenNumsUpToX(10)

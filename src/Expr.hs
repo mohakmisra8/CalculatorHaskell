@@ -45,19 +45,19 @@ data Expr = Add Expr Expr
           | Less Expr Expr
           | Greater Expr Expr
           | Not Expr
-          | Sin Expr 
-          | Cos Expr 
-          | Tan Expr 
-          | Arcsin Expr 
-          | Arccos Expr 
-          | Arctan Expr 
-          | Sinh Expr 
-          | Cosh Expr 
-          | Tanh Expr 
-          | Arcsinh Expr 
-          | Arccosh Expr 
-          | Arctanh Expr 
-          | Exp Expr 
+          | Sin Expr
+          | Cos Expr
+          | Tan Expr
+          | Arcsin Expr
+          | Arccos Expr
+          | Arctan Expr
+          | Sinh Expr
+          | Cosh Expr
+          | Tanh Expr
+          | Arcsinh Expr
+          | Arccosh Expr
+          | Arctanh Expr
+          | Exp Expr
   deriving (Show, Eq, Ord)
 
 -- These are the REPL commands
@@ -71,7 +71,7 @@ data Command = Set Name Expr -- assign an expression to a variable name
   deriving Show
 
 --variables will be of these types
-data Lit = IntVal Int | StrVal String | BoolVal Bool | FloatVal Float 
+data Lit = IntVal Int | StrVal String | BoolVal Bool | FloatVal Float
   deriving (Show, Eq, Ord)
 
 --most of our error will be returned like this so that the program continues running
@@ -186,12 +186,12 @@ eval vars (Implies a b) | getExprType vars a == "Bool" && getExprType vars b == 
 --returns the boolean resulting from x < y, if the types of x and y are types that can be compared
 eval vars (Less x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x < getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x < getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x < getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x < getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "FVal"-> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x < getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x < getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x < getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x < getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "String" -> case getExprType vars x of
                                                  "String" -> Right $ Just (BoolVal (getLit vars x < getLit vars y))
@@ -203,12 +203,12 @@ eval vars (Less x y) = case getExprType vars y of
 --returns the boolean resulting from x > y, if the types of x and y are types that can be compared
 eval vars (Greater x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x > getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x > getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x > getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x > getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "FVal"-> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x > getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x > getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x > getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x > getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "String" -> case getExprType vars x of
                                                  "String" -> Right $ Just (BoolVal (getLit vars x > getLit vars y))
@@ -220,12 +220,12 @@ eval vars (Greater x y) = case getExprType vars y of
 --returns the boolean resulting from x == y, if the types of x and y are types that can be compared
 eval vars (Same x y) = case getExprType vars y of
                                  "Val" -> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x == getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x == getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x == getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "FVal"-> case getExprType vars x of
-                                                 "Val" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
-                                                 "FVal"-> Right $ Just (BoolVal (getLit vars x == getLit vars y))
+                                                 "Val" -> Right $ Just (BoolVal (getFloatVal vars x == getFloatVal vars y))
+                                                 "FVal"-> Right $ Just (BoolVal (getFloatVal vars x == getFloatVal vars y))
                                                  otherwise -> Left $ IncorrectUsageError "cannot perform comparison between two different types"
                                  "String" -> case getExprType vars x of
                                                  "String" -> Right $ Just (BoolVal (getLit vars x == getLit vars y))
@@ -239,68 +239,48 @@ eval vars (Not a) | (getExprType vars a) == "Bool" = Right $ Just (BoolVal $ not
                   | otherwise               = Left $ IncorrectUsageError "Cannot perform boolean comparisons on non boolean variables"
 
 --performs trigonometric functions on values if they match certain conditions
-eval vars (Sin (FVal x)) = Right $ Just (FloatVal (sin (getFloatVal vars (FVal x))))
-eval vars (Sin (Val x)) = Right $ Just (FloatVal (sin (getFloatVal vars (Val x))))
-eval vars (Sin x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Sin a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (sin (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Cos (FVal x)) = Right $ Just (FloatVal (cos (getFloatVal vars (FVal x))))
-eval vars (Cos (Val x)) = Right $ Just (FloatVal (cos (getFloatVal vars (Val x))))
-eval vars (Cos x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Cos a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (cos (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Tan (FVal x)) = Right $ Just (FloatVal (tan (getFloatVal vars (FVal x))))
-eval vars (Tan (Val x)) = Right $ Just (FloatVal (tan (getFloatVal vars (Val x))))
-eval vars (Tan x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Tan a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (tan (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arcsin (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (asin (getFloatVal vars (FVal x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arcsin (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (asin (getFloatVal vars (Val x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arcsin x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arcsin a) | (getExprType vars a == "Val" || getExprType vars a == "FVal") && getFloatVal vars a <= 1 && getFloatVal vars a >= -1 = Right $ Just (FloatVal (asin (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arccos (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acos (getFloatVal vars (FVal x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arccos (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acos (getFloatVal vars (Val x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arccos x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arccos a) | (getExprType vars a == "Val" || getExprType vars a == "FVal") && getFloatVal vars a <= 1 && getFloatVal vars a >= -1 = Right $ Just (FloatVal (acos (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arctan (FVal x)) = Right $ Just (FloatVal (atan (getFloatVal vars (FVal x))))
-eval vars (Arctan (Val x)) = Right $ Just (FloatVal (atan (getFloatVal vars (Val x))))
-eval vars (Arctan x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arctan a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (atan (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Sinh (FVal x)) = Right $ Just (FloatVal (sinh (getFloatVal vars (FVal x))))
-eval vars (Sinh (Val x)) = Right $ Just (FloatVal (sinh (getFloatVal vars (Val x))))
-eval vars (Sinh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Sinh a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (sinh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Cosh (FVal x)) = Right $ Just (FloatVal (cosh (getFloatVal vars (FVal x))))
-eval vars (Cosh (Val x)) = Right $ Just (FloatVal (cosh (getFloatVal vars (Val x))))
-eval vars (Cosh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Cosh a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (cosh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Tanh (FVal x)) = Right $ Just (FloatVal (tanh (getFloatVal vars (FVal x))))
-eval vars (Tanh (Val x)) = Right $ Just (FloatVal (tanh (getFloatVal vars (Val x))))
-eval vars (Tanh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Tanh a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (tanh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arcsinh (FVal x)) = Right $ Just (FloatVal (asinh (getFloatVal vars (FVal x))))
-eval vars (Arcsinh (Val x)) = Right $ Just (FloatVal (asinh (getFloatVal vars (Val x))))
-eval vars (Arcsinh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arcsinh a) | getExprType vars a == "Val" || getExprType vars a == "FVal" = Right $ Just (FloatVal (asinh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arccosh (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acosh (getFloatVal vars (FVal x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers inside -1 <= x <= 1"
-eval vars (Arccosh (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (acosh (getFloatVal vars (Val x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers inside -1 <= x <= 1"
-eval vars (Arccosh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arccosh a) | (getExprType vars a == "Val" || getExprType vars a == "FVal") && getFloatVal vars a <= 1 && getFloatVal vars a >= -1 = Right $ Just (FloatVal (acosh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
-eval vars (Arctanh (FVal x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars (FVal x))))
-                             | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arctanh (Val x)) | x <= 1 && x >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars (Val x))))
-                            | otherwise         = Left $ IncorrectUsageError "cannot perform this operation on numbers outside -1 <= x <= 1"
-eval vars (Arctanh x) = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
+eval vars (Arctanh a) | (getExprType vars a == "Val" || getExprType vars a == "FVal") && getFloatVal vars a <= 1 && getFloatVal vars a >= -1 = Right $ Just (FloatVal (atanh (getFloatVal vars a)))
+                  | otherwise = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
 eval vars (Abs a) | getExprType vars a == "FVal" = Right $ Just (FloatVal (abs (getFloatVal vars a)))
                   | getExprType vars a == "Val"  = Right $ Just (IntVal (abs (getVal vars a)))
                   | otherwise                    = Left $ IncorrectUsageError "cannot perform mathematical operations on a non number"
 
 --returns the type that the Expr gets evaluated down to as a string
-getExprType :: Map Name Lit -> Expr -> String 
+getExprType :: Map Name Lit -> Expr -> String
 getExprType vars a  = toType (removeJust $ removeMaybe $ eval vars a)
 
 --returns the Type of a Lit passed in
@@ -320,7 +300,7 @@ toBool vars result | isLeft result = error "not boolean"
                    | otherwise = getBool vars (getExpr (removeJust (removeMaybe result)))
 
 --finds a variable in the map of variables
-findVar :: Map Name Lit -> Name -> Lit 
+findVar :: Map Name Lit -> Name -> Lit
 findVar stack n = removeJust (Data.Map.lookup n stack)
 
 --returns a float from a given expression, also converts a Val to a FVal
@@ -352,7 +332,7 @@ getVal vars (Val a) = a
 getVal vars (FVal a) = fromInteger (round a)
 getVal vars x = toInt vars (removeJust $ removeMaybe (eval vars x))
 
-toInt :: Map Name Lit -> Lit -> Int 
+toInt :: Map Name Lit -> Lit -> Int
 toInt vars (IntVal a) = a
 toInt vars (FloatVal a)= fromInteger (round a)
 toInt vars l       = error "cannot convert to int"
@@ -376,7 +356,6 @@ getExpr (IntVal a)  = Val a
 getExpr (StrVal a)  = Str a
 getExpr (BoolVal a) = Bool a
 getExpr (FloatVal a)= FVal a
-getExpr _           = Val 0
 
 --returns the factorial value as an int
 factorial :: Map Name Lit -> Expr -> Int
