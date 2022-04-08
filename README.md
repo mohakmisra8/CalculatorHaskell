@@ -1,5 +1,5 @@
 # Haskell-Project-2
- Haskell Project 2 done by 200004555, Ewan and Deepankaur
+ Haskell Project 2 done by 200004555, Ewan and 210002191
 
  HOW TO RUN THE PROGRAMME:
  1) cabal build
